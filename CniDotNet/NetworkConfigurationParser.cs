@@ -5,7 +5,7 @@ using CniDotNet.Data;
 
 namespace CniDotNet;
 
-public static class NetworkConfigurationHandler
+public static class NetworkConfigurationParser
 {
     public static async Task<NetworkConfiguration?> LookupFirstAsync(
         IFilesystem filesystem, LookupOptions lookupOptions, CancellationToken cancellationToken = default)
@@ -106,6 +106,11 @@ public static class NetworkConfigurationHandler
         pluginParameters.Remove(ParsingConstants.Type);
         if (capabilities is not null) pluginParameters.Remove(ParsingConstants.Capabilities);
 
-        return new NetworkPlugin(type, capabilities, pluginParameters);
+        var originalJson = JsonSerializer.Serialize(jsonNode);
+
+        return new NetworkPlugin(type, capabilities, pluginParameters)
+        {
+            OriginalJson = originalJson
+        };
     }
 }

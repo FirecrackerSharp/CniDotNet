@@ -8,9 +8,14 @@ public class UnitTest1
     [Fact]
     public async Task Test1()
     {
-        var configs =
-            await NetworkConfigurationHandler.LookupFirstAsync(LocalFilesystem.Current,
-                new LookupOptions([".conflist"], Directory: "/etc/cni/net.d"));
-        Console.WriteLine(configs);
+        var conf = await NetworkConfigurationParser.LookupFirstAsync(LocalFilesystem.Current,
+            new LookupOptions([".conflist"], Directory: "/etc/cni/net.d"));
+        var firstPlugin = conf!.Plugins[0];
+        var runtimeOptions = new RuntimeOptions(
+            ContainerId: "fcnet",
+            NetworkNamespace: "testing",
+            InterfaceName: "eth0");
+
+        await CniRuntime.AddSinglePluginAsync(firstPlugin, runtimeOptions, "1.0.0");
     }
 }

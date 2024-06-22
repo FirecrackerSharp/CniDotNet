@@ -5,8 +5,47 @@ using CniDotNet.Data;
 
 namespace CniDotNet;
 
-public static class NetworkConfigurationParser
+public static class NetworkConfigurationHandler
 {
+    public static async Task<NetworkConfiguration?> LookupFirstAsync(
+        IFilesystem filesystem, LookupOptions lookupOptions, CancellationToken cancellationToken = default)
+    {
+        var matches = await LookupManyAsync(filesystem, lookupOptions, cancellationToken);
+        return matches.Count == 0 ? null : matches[0];
+    }
+    
+    public static async Task<IReadOnlyList<NetworkConfiguration>> LookupManyAsync(
+        IFilesystem filesystem, LookupOptions lookupOptions, CancellationToken cancellationToken = default)
+    {
+        var directory = lookupOptions.Directory ??
+                        Environment.GetEnvironmentVariable(lookupOptions.EnvironmentVariable);
+        if (directory is null) return [];
+
+        if (!Directory.Exists(directory)) return [];
+
+        var files = Directory
+            .EnumerateFiles(directory, lookupOptions.SearchQuery ?? "", lookupOptions.DirectorySearchOption)
+            .Where(f => lookupOptions.FileExtensions.Contains(Path.GetExtension(f)));
+
+        var configurations = new List<NetworkConfiguration>();
+
+        foreach (var file in files)
+        {
+            try
+            {
+                var configuration = await LoadFromFileAsync(filesystem, file, cancellationToken);
+                configurations.Add(configuration);
+            }
+            catch (Exception)
+            {
+                if (lookupOptions.ProceedAfterFailure) continue;
+                return [];
+            }
+        }
+
+        return configurations;
+    }
+    
     public static async Task<NetworkConfiguration> LoadFromFileAsync(
         IFilesystem filesystem,
         string filePath,

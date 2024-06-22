@@ -1,4 +1,5 @@
 using CniDotNet.Abstractions;
+using CniDotNet.Data;
 
 namespace CniDotNet.Tests;
 
@@ -7,7 +8,9 @@ public class UnitTest1
     [Fact]
     public async Task Test1()
     {
-        var c =
-            await NetworkConfigurationParser.LoadFromFileAsync(LocalFilesystem.Current, "/etc/cni/net.d/fcnet.conflist");
+        var configs =
+            await NetworkConfigurationHandler.LookupFirstAsync(LocalFilesystem.Current,
+                new LookupOptions([".conflist"], Directory: "/etc/cni/net.d"));
+        Console.WriteLine(configs);
     }
 }

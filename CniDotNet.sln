@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CniDotNet", "CniDotNet\CniDotNet.csproj", "{1891677E-CB4B-43B2-9547-3DCEC4B03B38}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CniDotNet.Tests", "CniDotNet.Tests\CniDotNet.Tests.csproj", "{051F9F85-B61D-4690-A14A-CD11EF30E57A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{1891677E-CB4B-43B2-9547-3DCEC4B03B38}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1891677E-CB4B-43B2-9547-3DCEC4B03B38}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1891677E-CB4B-43B2-9547-3DCEC4B03B38}.Release|Any CPU.Build.0 = Release|Any CPU
+		{051F9F85-B61D-4690-A14A-CD11EF30E57A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{051F9F85-B61D-4690-A14A-CD11EF30E57A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{051F9F85-B61D-4690-A14A-CD11EF30E57A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{051F9F85-B61D-4690-A14A-CD11EF30E57A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

@@ -27,6 +27,9 @@ public class UnitTest1
         var checkErrorResult = await CniRuntime.CheckConfigurationAsync(
             conf!, runtimeOptions, previousResult, pluginLookupOptions: plo);
         Assert.Null(checkErrorResult);
+
+        var gcResult = await CniRuntime.GarbageCollectConfigurationAsync(
+            conf!, runtimeOptions, pluginLookupOptions: plo);
         
         for (var i = 0; i < 2; ++i)
         {

@@ -9,5 +9,7 @@ public enum WellKnownError
     IoFailure = 5,
     FailedToDecodeContent = 6,
     InvalidNetworkConfiguration = 7,
-    TryAgainLater = 11
+    TryAgainLater = 11,
+    StatusPluginNotAvailable = 50,
+    StatusPluginNotAvailableAndExistingContainersMayBeDamaged = 51
 }

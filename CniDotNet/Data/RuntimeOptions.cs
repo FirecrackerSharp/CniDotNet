@@ -10,4 +10,14 @@ public record RuntimeOptions(
     string? ElevationPassword = null,
     string? CniVersion = null,
     string? PluginPath = null,
-    string SuPath = "/bin/su");
+    string SuPath = "/bin/su")
+{
+    public static RuntimeOptions FromConfiguration(NetworkConfiguration networkConfiguration,
+        string containerId, string networkNamespace, string interfaceName, ICniHost cniHost,
+        string? elevationPassword = null, string? pluginPath = null, string suPath = "/bin/su")
+    {
+        return new RuntimeOptions(
+            containerId, networkNamespace, interfaceName, cniHost, elevationPassword, networkConfiguration.CniVersion,
+            pluginPath, suPath);
+    }
+}

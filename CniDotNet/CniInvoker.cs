@@ -14,7 +14,7 @@ internal static class CniInvoker
         AddCniResult? previousResult,
         CancellationToken cancellationToken)
     {
-        var stdinJson = DerivePluginInput(networkPlugin, runtimeOptions.CniVersion!,
+        var stdinJson = DerivePluginInput(networkPlugin, runtimeOptions.CniVersion,
             runtimeOptions.ContainerId, previousResult);
         var inputPath = runtimeOptions.CniHost.GetTempFilePath();
         await runtimeOptions.CniHost.WriteFileAsync(inputPath, stdinJson, cancellationToken);

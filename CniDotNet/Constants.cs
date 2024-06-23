@@ -29,6 +29,7 @@ internal static class Constants
     {
         public const string Add = "ADD";
         public const string Delete = "DEL";
+        public const string Check = "CHECK";
         public const string ProbeVersions = "VERSION";
     }
 }

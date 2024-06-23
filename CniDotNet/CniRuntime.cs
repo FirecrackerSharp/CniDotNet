@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using CniDotNet.Data;
 using CniDotNet.Data.Results;
 using CniDotNet.Host;
@@ -8,11 +7,66 @@ namespace CniDotNet;
 
 public static class CniRuntime
 {
-    private static readonly JsonSerializerOptions SerializerOptions = new()
+    public static async Task<WrappedCniResult<AddCniResult>> AddConfigurationAsync(
+        NetworkConfiguration networkConfiguration,
+        RuntimeOptions runtimeOptions,
+        PluginLookupOptions? pluginLookupOptions = null,
+        CancellationToken cancellationToken = default)
     {
-        DefaultIgnoreCondition = JsonIgnoreCondition.Never
-    };
-    
+        AddCniResult? previousResult = null;
+
+        foreach (var networkPlugin in networkConfiguration.Plugins)
+        {
+            var wrappedResult = await AddPluginAsync(
+                networkPlugin, runtimeOptions, pluginLookupOptions, previousResult, cancellationToken);
+            previousResult = wrappedResult.SuccessValue;
+            
+            if (wrappedResult.IsError)
+            {
+                return WrappedCniResult<AddCniResult>.Error(wrappedResult.ErrorValue!);
+            }
+        }
+        
+        return WrappedCniResult<AddCniResult>.Success(previousResult!);
+    }
+
+    public static async Task<ErrorCniResult?> DeleteConfigurationAsync(
+        NetworkConfiguration networkConfiguration,
+        RuntimeOptions runtimeOptions,
+        AddCniResult previousResult,
+        PluginLookupOptions? pluginLookupOptions = null,
+        CancellationToken cancellationToken = default)
+    {
+        for (var i = networkConfiguration.Plugins.Count - 1; i >= 0; i--)
+        {
+            var networkPlugin = networkConfiguration.Plugins[i];
+            var errorCniResult = await DeletePluginAsync(
+                networkPlugin, runtimeOptions, pluginLookupOptions, previousResult, cancellationToken);
+            if (errorCniResult is not null) return errorCniResult;
+        }
+
+        return null;
+    }
+
+    public static async Task<ErrorCniResult?> CheckConfigurationAsync(
+        NetworkConfiguration networkConfiguration,
+        RuntimeOptions runtimeOptions,
+        AddCniResult previousResult,
+        PluginLookupOptions? pluginLookupOptions = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (networkConfiguration.DisableCheck) return null;
+        
+        foreach (var networkPlugin in networkConfiguration.Plugins)
+        {
+            var errorCniResult = await CheckPluginAsync(networkPlugin, runtimeOptions, previousResult,
+                pluginLookupOptions, cancellationToken);
+            if (errorCniResult is not null) return errorCniResult;
+        }
+
+        return null;
+    }
+
     public static async Task<WrappedCniResult<AddCniResult>> AddPluginAsync(
         NetworkPlugin networkPlugin,
         RuntimeOptions runtimeOptions,
@@ -30,7 +84,7 @@ public static class CniRuntime
             cancellationToken);
         return WrapCniResultWithOutput<AddCniResult>(resultJson);
     }
-
+    
     public static async Task<ErrorCniResult?> DeletePluginAsync(
         NetworkPlugin networkPlugin,
         RuntimeOptions runtimeOptions,
@@ -49,6 +103,24 @@ public static class CniRuntime
         return WrapCniResultWithoutOutput(resultJson);
     }
 
+    public static async Task<ErrorCniResult?> CheckPluginAsync(
+        NetworkPlugin networkPlugin,
+        RuntimeOptions runtimeOptions,
+        AddCniResult previousResult,
+        PluginLookupOptions? pluginLookupOptions = null,
+        CancellationToken cancellationToken = default)
+    {
+        var pluginBinary = LookupPluginBinary(runtimeOptions.CniHost, networkPlugin, pluginLookupOptions);
+        var resultJson = await CniInvoker.InvokeAsync(
+            networkPlugin,
+            runtimeOptions,
+            operation: Constants.Operations.Check,
+            pluginBinary!,
+            previousResult,
+            cancellationToken);
+        return WrapCniResultWithoutOutput(resultJson);
+    }
+    
     public static async Task<WrappedCniResult<VersionCniResult>> ProbePluginVersionsAsync(
         NetworkPlugin networkPlugin,
         RuntimeOptions runtimeOptions,
@@ -74,7 +146,7 @@ public static class CniRuntime
             return WrappedCniResult<T>.Error(errorValue!);
         }
 
-        var successValue = JsonSerializer.Deserialize<T>(resultJson, SerializerOptions);
+        var successValue = JsonSerializer.Deserialize<T>(resultJson);
         return WrappedCniResult<T>.Success(successValue!);
     }
 

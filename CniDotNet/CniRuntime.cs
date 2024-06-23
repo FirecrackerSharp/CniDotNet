@@ -1,6 +1,9 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using CniDotNet.Data;
 using CniDotNet.Data.Results;
+using CniDotNet.Data.Results.Add;
+using CniDotNet.Data.Results.Error;
 using CniDotNet.Host;
 
 namespace CniDotNet;
@@ -8,16 +11,33 @@ namespace CniDotNet;
 public static class CniRuntime
 {
     private const string OperationAdd = "ADD";
+
+    private static readonly JsonSerializerOptions SerializerOptions = new()
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.Never
+    };
     
-    public static async Task<AddResult> AddPluginAsync(
+    public static async Task<WrappedCniResult<AddCniResult>> AddPluginAsync(
         NetworkPlugin networkPlugin,
         RuntimeOptions runtimeOptions,
         PluginLookupOptions? pluginLookupOptions = null,
         CancellationToken cancellationToken = default)
     {
         var pluginBinary = LookupPluginBinary(runtimeOptions.CniHost, networkPlugin, pluginLookupOptions);
-        var addResultJson = await PluginInvoker.InvokeAsync(networkPlugin, runtimeOptions, OperationAdd, pluginBinary!, cancellationToken);
-        return JsonSerializer.Deserialize<AddResult>(addResultJson) ?? throw new JsonException("Could not deserialize AddResult");
+        var resultJson = await PluginInvoker.InvokeAsync(networkPlugin, runtimeOptions, OperationAdd, pluginBinary!, cancellationToken);
+        return WrapCniResult<AddCniResult>(resultJson);
+    }
+
+    private static WrappedCniResult<T> WrapCniResult<T>(string resultJson) where T : class
+    {
+        if (resultJson.Contains("\"code\": "))
+        {
+            var errorValue = JsonSerializer.Deserialize<ErrorCniResult>(resultJson);
+            return WrappedCniResult<T>.Error(errorValue!);
+        }
+        
+        var successValue = JsonSerializer.Deserialize<T>(resultJson, SerializerOptions);
+        return WrappedCniResult<T>.Success(successValue!);
     }
 
     private static string? LookupPluginBinary(ICniHost cniHost,

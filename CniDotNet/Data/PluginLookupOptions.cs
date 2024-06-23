@@ -1,6 +1,6 @@
 namespace CniDotNet.Data;
 
-public record PluginLookupOptions(
+public sealed record PluginLookupOptions(
     string? Directory = null,
     string EnvironmentVariable = "PLUGIN_PATH",
     SearchOption DirectorySearchOption = SearchOption.TopDirectoryOnly)

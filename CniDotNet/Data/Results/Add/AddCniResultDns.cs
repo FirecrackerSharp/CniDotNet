@@ -1,8 +1,8 @@
 using System.Text.Json.Serialization;
 
-namespace CniDotNet.Data.Results;
+namespace CniDotNet.Data.Results.Add;
 
-public record AddResultDns(
+public sealed record AddCniResultDns(
     [property: JsonPropertyName("nameservers")] string[] Nameservers,
     [property: JsonPropertyName("search")] string[] Search,
     [property: JsonPropertyName("options")] string[] Options,

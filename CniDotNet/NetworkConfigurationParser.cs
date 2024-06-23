@@ -8,24 +8,24 @@ namespace CniDotNet;
 public static class NetworkConfigurationParser
 {
     public static async Task<NetworkConfiguration?> LookupFirstAsync(
-        IFilesystem filesystem, LookupOptions lookupOptions, CancellationToken cancellationToken = default)
+        ICniHost cniHost, ConfigurationLookupOptions configurationLookupOptions, CancellationToken cancellationToken = default)
     {
-        var matches = await LookupManyAsync(filesystem, lookupOptions, cancellationToken);
+        var matches = await LookupManyAsync(cniHost, configurationLookupOptions, cancellationToken);
         return matches.Count == 0 ? null : matches[0];
     }
     
     public static async Task<IReadOnlyList<NetworkConfiguration>> LookupManyAsync(
-        IFilesystem filesystem, LookupOptions lookupOptions, CancellationToken cancellationToken = default)
+        ICniHost cniHost, ConfigurationLookupOptions configurationLookupOptions, CancellationToken cancellationToken = default)
     {
-        var directory = lookupOptions.Directory ??
-                        Environment.GetEnvironmentVariable(lookupOptions.EnvironmentVariable);
+        var directory = configurationLookupOptions.Directory ??
+                        Environment.GetEnvironmentVariable(configurationLookupOptions.EnvironmentVariable);
         if (directory is null) return [];
 
-        if (!Directory.Exists(directory)) return [];
+        if (!cniHost.DirectoryExists(directory)) return [];
 
-        var files = Directory
-            .EnumerateFiles(directory, lookupOptions.SearchQuery ?? "", lookupOptions.DirectorySearchOption)
-            .Where(f => lookupOptions.FileExtensions.Contains(Path.GetExtension(f)));
+        var files = cniHost
+            .EnumerateDirectory(directory, configurationLookupOptions.SearchQuery ?? "", configurationLookupOptions.DirectorySearchOption)
+            .Where(f => configurationLookupOptions.FileExtensions.Contains(Path.GetExtension(f)));
 
         var configurations = new List<NetworkConfiguration>();
 
@@ -33,12 +33,12 @@ public static class NetworkConfigurationParser
         {
             try
             {
-                var configuration = await LoadFromFileAsync(filesystem, file, cancellationToken);
+                var configuration = await LoadFromFileAsync(cniHost, file, cancellationToken);
                 configurations.Add(configuration);
             }
             catch (Exception)
             {
-                if (lookupOptions.ProceedAfterFailure) continue;
+                if (configurationLookupOptions.ProceedAfterFailure) continue;
                 return [];
             }
         }
@@ -47,11 +47,11 @@ public static class NetworkConfigurationParser
     }
     
     public static async Task<NetworkConfiguration> LoadFromFileAsync(
-        IFilesystem filesystem,
+        ICniHost cniHost,
         string filePath,
         CancellationToken cancellationToken = default)
     {
-        var sourceString = await filesystem.ReadFileAsync(filePath, cancellationToken);
+        var sourceString = await cniHost.ReadFileAsync(filePath, cancellationToken);
         return LoadFromString(sourceString);
     }
 
@@ -65,31 +65,31 @@ public static class NetworkConfigurationParser
 
     private static NetworkConfiguration LoadConfiguration(JsonNode jsonNode)
     {
-        var cniVersion = Version.Parse(jsonNode[ParsingConstants.CniVersion]!.GetValue<string>());
+        var cniVersion = Version.Parse(jsonNode[Constants.Parsing.CniVersion]!.GetValue<string>());
 
         IEnumerable<Version>? cniVersions = null;
-        if (jsonNode.AsObject().ContainsKey(ParsingConstants.CniVersions))
+        if (jsonNode.AsObject().ContainsKey(Constants.Parsing.CniVersions))
         {
-            cniVersions = jsonNode[ParsingConstants.CniVersions]!
+            cniVersions = jsonNode[Constants.Parsing.CniVersions]!
                 .AsArray().GetValues<string>()
                 .Select(Version.Parse);
         }
 
-        var name = jsonNode[ParsingConstants.Name]!.GetValue<string>();
+        var name = jsonNode[Constants.Parsing.Name]!.GetValue<string>();
         var disableCheck = false;
 
-        if (jsonNode.AsObject().ContainsKey(ParsingConstants.DisableCheck))
+        if (jsonNode.AsObject().ContainsKey(Constants.Parsing.DisableCheck))
         {
-            disableCheck = jsonNode[ParsingConstants.DisableCheck]!.GetValue<bool>();
+            disableCheck = jsonNode[Constants.Parsing.DisableCheck]!.GetValue<bool>();
         }
 
         var disableGc = false;
-        if (jsonNode.AsObject().ContainsKey(ParsingConstants.DisableGc))
+        if (jsonNode.AsObject().ContainsKey(Constants.Parsing.DisableGc))
         {
-            disableGc = jsonNode[ParsingConstants.DisableGc]!.GetValue<bool>();
+            disableGc = jsonNode[Constants.Parsing.DisableGc]!.GetValue<bool>();
         }
 
-        var plugins = jsonNode[ParsingConstants.Plugins]!.AsArray()
+        var plugins = jsonNode[Constants.Parsing.Plugins]!.AsArray()
             .Select(pluginJsonNode => LoadPlugin(pluginJsonNode!))
             .ToList();
 
@@ -99,12 +99,12 @@ public static class NetworkConfigurationParser
 
     private static NetworkPlugin LoadPlugin(JsonNode jsonNode)
     {
-        var type = jsonNode[ParsingConstants.Type]!.GetValue<string>();
-        var capabilities = jsonNode[ParsingConstants.Capabilities]?.AsObject();
+        var type = jsonNode[Constants.Parsing.Type]!.GetValue<string>();
+        var capabilities = jsonNode[Constants.Parsing.Capabilities]?.AsObject();
 
         var pluginParameters = jsonNode.AsObject();
-        pluginParameters.Remove(ParsingConstants.Type);
-        if (capabilities is not null) pluginParameters.Remove(ParsingConstants.Capabilities);
+        pluginParameters.Remove(Constants.Parsing.Type);
+        if (capabilities is not null) pluginParameters.Remove(Constants.Parsing.Capabilities);
 
         var originalJson = JsonSerializer.Serialize(jsonNode);
 

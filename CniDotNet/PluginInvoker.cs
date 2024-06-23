@@ -8,10 +8,10 @@ internal static class PluginInvoker
         NetworkPlugin networkPlugin,
         RuntimeOptions runtimeOptions,
         string operation,
-        string cniVersion,
+        string pluginBinary,
         CancellationToken cancellationToken)
     {
-        var stdinJson = NetworkPluginParser.SaveToStringInternal(networkPlugin, cniVersion);
+        var stdinJson = NetworkPluginParser.SaveToStringInternal(networkPlugin, runtimeOptions.CniVersion!);
         return "";
     }
 }

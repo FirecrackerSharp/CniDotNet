@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using CniDotNet.Data;
 
 namespace CniDotNet;
@@ -11,34 +10,19 @@ public static class NetworkPluginParser
 
     internal static string SaveToStringInternal(NetworkPlugin networkPlugin, string? cniVersion)
     {
-        var jsonObj = new JsonObject();
-        
-        jsonObj[ParsingConstants.Type] = JsonValue.Create(networkPlugin.Type);
-        
+        var jsonNode = networkPlugin.PluginParameters.DeepClone();
+        jsonNode[Constants.Parsing.Type] = networkPlugin.Type;
+
         if (networkPlugin.Capabilities is not null)
         {
-            jsonObj[ParsingConstants.Capabilities] = networkPlugin.Capabilities;
-        }
-        
-        foreach (var (key, value) in networkPlugin.PluginParameters)
-        {
-            if (value is null) continue;
-            
-            if (value.GetValueKind() == JsonValueKind.String)
-            {
-                jsonObj[key] = value.AsValue().GetValue<string>();
-            }
-            else if (value.GetValueKind() == JsonValueKind.Object)
-            {
-                jsonObj[key] = value.AsObject();
-            }
+            jsonNode[Constants.Parsing.Capabilities] = networkPlugin.Capabilities;
         }
 
         if (cniVersion is not null)
         {
-            jsonObj[ParsingConstants.CniVersion] = cniVersion;
+            jsonNode[Constants.Parsing.CniVersion] = cniVersion;
         }
 
-        return JsonSerializer.Serialize(jsonObj);
+        return JsonSerializer.Serialize(jsonNode);
     }
 }

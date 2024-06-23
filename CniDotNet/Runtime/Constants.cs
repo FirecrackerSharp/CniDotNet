@@ -1,4 +1,4 @@
-namespace CniDotNet;
+namespace CniDotNet.Runtime;
 
 internal static class Constants
 {
@@ -23,6 +23,7 @@ internal static class Constants
         public const string NetworkNamespace = "CNI_NETNS";
         public const string InterfaceName = "CNI_IFNAME";
         public const string PluginPath = "CNI_PATH";
+        public const string Arguments = "CNI_ARGS";
     }
 
     internal static class Operations

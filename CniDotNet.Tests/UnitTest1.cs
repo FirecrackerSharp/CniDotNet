@@ -1,5 +1,6 @@
 using CniDotNet.Data;
 using CniDotNet.Host;
+using CniDotNet.Runtime;
 
 namespace CniDotNet.Tests;
 
@@ -16,6 +17,7 @@ public class UnitTest1
             networkNamespace: "/var/run/netns/testing",
             interfaceName: "eth0",
             pluginPath: "/home/kanpov/plugins/bin",
+            arguments: new Dictionary<string, string>(),
             elevationPassword: "495762",
             cniHost: LocalCniHost.Current);
 

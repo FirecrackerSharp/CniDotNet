@@ -3,7 +3,7 @@ using CniDotNet.Data;
 using CniDotNet.Data.Results;
 using CniDotNet.Host;
 
-namespace CniDotNet;
+namespace CniDotNet.Runtime;
 
 public static class CniRuntime
 {

@@ -1,8 +1,9 @@
+using System.Text.Json;
 using CniDotNet.Data;
 
 namespace CniDotNet;
 
-internal static class PluginInvoker
+internal static class CniInvoker
 {
     public static async Task<string> InvokeAsync(
         NetworkPlugin networkPlugin,
@@ -11,7 +12,7 @@ internal static class PluginInvoker
         string pluginBinary,
         CancellationToken cancellationToken)
     {
-        var stdinJson = NetworkPluginParser.SaveToStringInternal(networkPlugin, runtimeOptions.CniVersion!, runtimeOptions.ContainerId);
+        var stdinJson = DerivePluginInput(networkPlugin, runtimeOptions.CniVersion!, runtimeOptions.ContainerId);
         var inputPath = runtimeOptions.CniHost.GetTempFilePath();
         await runtimeOptions.CniHost.WriteFileAsync(inputPath, stdinJson, cancellationToken);
         
@@ -32,5 +33,28 @@ internal static class PluginInvoker
             runtimeOptions.SuPath, cancellationToken);
         await process.WaitForExitAsync(cancellationToken);
         return process.CurrentOutput;
+    }
+    
+    private static string DerivePluginInput(NetworkPlugin networkPlugin, string? cniVersion, string? name)
+    {
+        var jsonNode = networkPlugin.PluginParameters.DeepClone();
+        jsonNode[Constants.Parsing.Type] = networkPlugin.Type;
+
+        if (cniVersion is not null)
+        {
+            jsonNode[Constants.Parsing.CniVersion] = cniVersion;
+        }
+
+        if (name is not null)
+        {
+            jsonNode[Constants.Parsing.Name] = name;
+        }
+
+        if (networkPlugin.Capabilities is not null)
+        {
+            jsonNode[Constants.Parsing.RuntimeConfig] = networkPlugin.Capabilities;
+        }
+
+        return JsonSerializer.Serialize(jsonNode);
     }
 }

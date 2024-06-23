@@ -23,4 +23,10 @@ internal static class Constants
         public const string InterfaceName = "CNI_IFNAME";
         public const string PluginPath = "CNI_PATH";
     }
+
+    internal static class Operations
+    {
+        public const string Add = "ADD";
+        public const string Delete = "DEL";
+    }
 }

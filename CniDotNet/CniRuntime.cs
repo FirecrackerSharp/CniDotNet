@@ -10,8 +10,6 @@ namespace CniDotNet;
 
 public static class CniRuntime
 {
-    private const string OperationAdd = "ADD";
-
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.Never
@@ -24,20 +22,40 @@ public static class CniRuntime
         CancellationToken cancellationToken = default)
     {
         var pluginBinary = LookupPluginBinary(runtimeOptions.CniHost, networkPlugin, pluginLookupOptions);
-        var resultJson = await PluginInvoker.InvokeAsync(networkPlugin, runtimeOptions, OperationAdd, pluginBinary!, cancellationToken);
-        return WrapCniResult<AddCniResult>(resultJson);
+        var resultJson = await CniInvoker.InvokeAsync(networkPlugin, runtimeOptions, Constants.Operations.Add,
+            pluginBinary!, cancellationToken);
+        return WrapCniResultWithOutput<AddCniResult>(resultJson);
     }
 
-    private static WrappedCniResult<T> WrapCniResult<T>(string resultJson) where T : class
+    public static async Task<ErrorCniResult?> DeletePluginAsync(
+        NetworkPlugin networkPlugin,
+        RuntimeOptions runtimeOptions,
+        PluginLookupOptions? pluginLookupOptions = null,
+        CancellationToken cancellationToken = default)
+    {
+        var pluginBinary = LookupPluginBinary(runtimeOptions.CniHost, networkPlugin, pluginLookupOptions);
+        var resultJson = await CniInvoker.InvokeAsync(networkPlugin, runtimeOptions, Constants.Operations.Delete,
+            pluginBinary!, cancellationToken);
+        return WrapCniResultWithoutOutput(resultJson);
+    }
+
+    private static WrappedCniResult<T> WrapCniResultWithOutput<T>(string resultJson) where T : class
     {
         if (resultJson.Contains("\"code\": "))
         {
             var errorValue = JsonSerializer.Deserialize<ErrorCniResult>(resultJson);
             return WrappedCniResult<T>.Error(errorValue!);
         }
-        
+
         var successValue = JsonSerializer.Deserialize<T>(resultJson, SerializerOptions);
         return WrappedCniResult<T>.Success(successValue!);
+    }
+
+    private static ErrorCniResult? WrapCniResultWithoutOutput(string resultJson)
+    {
+        return string.IsNullOrWhiteSpace(resultJson)
+            ? null
+            : JsonSerializer.Deserialize<ErrorCniResult>(resultJson);
     }
 
     private static string? LookupPluginBinary(ICniHost cniHost,

@@ -5,7 +5,7 @@ using CniDotNet.Host;
 
 namespace CniDotNet;
 
-public static class NetworkConfigurationParser
+public static class NetworkConfigurationLoader
 {
     public static async Task<NetworkConfiguration?> LookupFirstAsync(
         ICniHost cniHost, ConfigurationLookupOptions configurationLookupOptions, CancellationToken cancellationToken = default)

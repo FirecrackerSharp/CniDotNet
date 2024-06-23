@@ -8,7 +8,7 @@ public class UnitTest1
     [Fact]
     public async Task Test1()
     {
-        var conf = await NetworkConfigurationParser.LookupFirstAsync(LocalCniHost.Current,
+        var conf = await NetworkConfigurationLoader.LookupFirstAsync(LocalCniHost.Current,
             new ConfigurationLookupOptions([".conflist"], Directory: "/etc/cni/net.d"));
         var firstPlugin = conf!.Plugins[0];
         var runtimeOptions = new RuntimeOptions(
@@ -20,9 +20,10 @@ public class UnitTest1
             ElevationPassword: "495762",
             CniHost: LocalCniHost.Current);
 
-        await CniRuntime.AddPluginAsync(
+        var o = await CniRuntime.DeletePluginAsync(
             firstPlugin,
             runtimeOptions,
             new PluginLookupOptions(Directory: "/home/kanpov/plugins/bin"));
+        Assert.Null(o);
     }
 }

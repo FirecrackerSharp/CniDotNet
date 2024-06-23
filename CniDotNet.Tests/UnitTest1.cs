@@ -1,5 +1,5 @@
-using CniDotNet.Abstractions;
 using CniDotNet.Data;
+using CniDotNet.Host;
 
 namespace CniDotNet.Tests;
 
@@ -23,5 +23,17 @@ public class UnitTest1
             firstPlugin,
             runtimeOptions,
             new PluginLookupOptions(Directory: "/home/kanpov/plugins/bin"));
+    }
+
+    [Fact]
+    public async Task Test2()
+    {
+        var proc = await LocalCniHost.Current.StartProcessWithElevationAsync(
+            "/home/kanpov/plugins/bin/ptp", new Dictionary<string, string>
+            {
+                { "CNI_COMMAND", "VERSION" }
+            }, "495762", "/bin/sudo", default);
+        var output = await proc.WaitForExitAsync(default);
+        Console.WriteLine(output);
     }
 }

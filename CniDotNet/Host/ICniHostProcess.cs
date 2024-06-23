@@ -1,4 +1,4 @@
-namespace CniDotNet.Abstractions;
+namespace CniDotNet.Host;
 
 public interface ICniHostProcess
 {

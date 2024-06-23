@@ -1,4 +1,4 @@
-using CniDotNet.Abstractions;
+using CniDotNet.Host;
 
 namespace CniDotNet.Data;
 
@@ -9,4 +9,5 @@ public sealed record RuntimeOptions(
     ICniHost CniHost,
     string? ElevationPassword = null,
     string? CniVersion = null,
-    string? PluginPath = null);
+    string? PluginPath = null,
+    string SudoPath = "/bin/sudo");

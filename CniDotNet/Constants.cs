@@ -16,6 +16,10 @@ internal static class Constants
 
     internal static class Environment
     {
-        
+        public const string Command = "CNI_COMMAND";
+        public const string ContainerId = "CNI_CONTAINERID";
+        public const string NetworkNamespace = "CNI_NETNS";
+        public const string InterfaceName = "CNI_IFNAME";
+        public const string PluginPath = "CNI_PATH";
     }
 }

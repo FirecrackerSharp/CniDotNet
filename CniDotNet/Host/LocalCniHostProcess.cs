@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Text;
 
-namespace CniDotNet.Abstractions;
+namespace CniDotNet.Host;
 
 public class LocalCniHostProcess : ICniHostProcess
 {

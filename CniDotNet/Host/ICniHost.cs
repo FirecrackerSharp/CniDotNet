@@ -1,4 +1,4 @@
-namespace CniDotNet.Abstractions;
+namespace CniDotNet.Host;
 
 public interface ICniHost
 {
@@ -10,5 +10,8 @@ public interface ICniHost
 
     IEnumerable<string> EnumerateDirectory(string path, string searchPattern, SearchOption searchOption);
 
-    ICniHostProcess StartProcess(string executable, string args, Dictionary<string, string> environment, string? elevationPassword);
+    bool IsRoot { get; }
+    
+    Task<ICniHostProcess> StartProcessWithElevationAsync(string command, Dictionary<string, string> environment,
+        string elevationPassword, string sudoPath, CancellationToken cancellationToken);
 }

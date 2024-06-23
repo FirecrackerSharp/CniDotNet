@@ -1,5 +1,3 @@
-using CniDotNet.Data.Results.Error;
-
 namespace CniDotNet.Data.Results;
 
 public sealed class WrappedCniResult<T> where T : class

@@ -2,8 +2,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using CniDotNet.Data;
 using CniDotNet.Data.Results;
-using CniDotNet.Data.Results.Add;
-using CniDotNet.Data.Results.Error;
 using CniDotNet.Host;
 
 namespace CniDotNet;
@@ -19,11 +17,17 @@ public static class CniRuntime
         NetworkPlugin networkPlugin,
         RuntimeOptions runtimeOptions,
         PluginLookupOptions? pluginLookupOptions = null,
+        AddCniResult? previousResult = null,
         CancellationToken cancellationToken = default)
     {
         var pluginBinary = LookupPluginBinary(runtimeOptions.CniHost, networkPlugin, pluginLookupOptions);
-        var resultJson = await CniInvoker.InvokeAsync(networkPlugin, runtimeOptions, Constants.Operations.Add,
-            pluginBinary!, cancellationToken);
+        var resultJson = await CniInvoker.InvokeAsync(
+            networkPlugin,
+            runtimeOptions,
+            operation: Constants.Operations.Add,
+            pluginBinary!,
+            previousResult,
+            cancellationToken);
         return WrapCniResultWithOutput<AddCniResult>(resultJson);
     }
 
@@ -31,12 +35,35 @@ public static class CniRuntime
         NetworkPlugin networkPlugin,
         RuntimeOptions runtimeOptions,
         PluginLookupOptions? pluginLookupOptions = null,
+        AddCniResult? previousResult = null,
         CancellationToken cancellationToken = default)
     {
         var pluginBinary = LookupPluginBinary(runtimeOptions.CniHost, networkPlugin, pluginLookupOptions);
-        var resultJson = await CniInvoker.InvokeAsync(networkPlugin, runtimeOptions, Constants.Operations.Delete,
-            pluginBinary!, cancellationToken);
+        var resultJson = await CniInvoker.InvokeAsync(
+            networkPlugin,
+            runtimeOptions,
+            operation: Constants.Operations.Delete,
+            pluginBinary!,
+            previousResult,
+            cancellationToken);
         return WrapCniResultWithoutOutput(resultJson);
+    }
+
+    public static async Task<WrappedCniResult<VersionCniResult>> ProbePluginVersionsAsync(
+        NetworkPlugin networkPlugin,
+        RuntimeOptions runtimeOptions,
+        PluginLookupOptions? pluginLookupOptions = null,
+        CancellationToken cancellationToken = default)
+    {
+        var pluginBinary = LookupPluginBinary(runtimeOptions.CniHost, networkPlugin, pluginLookupOptions);
+        var resultJson = await CniInvoker.InvokeAsync(
+            networkPlugin,
+            runtimeOptions,
+            operation: Constants.Operations.ProbeVersions,
+            pluginBinary!,
+            previousResult: null,
+            cancellationToken);
+        return WrapCniResultWithOutput<VersionCniResult>(resultJson);
     }
 
     private static WrappedCniResult<T> WrapCniResultWithOutput<T>(string resultJson) where T : class

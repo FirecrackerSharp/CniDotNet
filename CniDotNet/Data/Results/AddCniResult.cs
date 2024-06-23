@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace CniDotNet.Data.Results.Add;
+namespace CniDotNet.Data.Results;
 
 public sealed record AddCniResult(
     [property: JsonPropertyName("cniVersion")] string CniVersion,

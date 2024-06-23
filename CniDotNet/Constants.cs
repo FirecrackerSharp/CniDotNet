@@ -13,6 +13,7 @@ internal static class Constants
         public const string Type = "type";
         public const string Capabilities = "capabilities";
         public const string RuntimeConfig = "runtimeConfig";
+        public const string PreviousResult = "prevResult";
     }
 
     internal static class Environment
@@ -28,5 +29,6 @@ internal static class Constants
     {
         public const string Add = "ADD";
         public const string Delete = "DEL";
+        public const string ProbeVersions = "VERSION";
     }
 }

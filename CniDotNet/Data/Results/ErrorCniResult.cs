@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace CniDotNet.Data.Results.Error;
+namespace CniDotNet.Data.Results;
 
 public sealed record ErrorCniResult(
     [property: JsonPropertyName("code")] uint Code,

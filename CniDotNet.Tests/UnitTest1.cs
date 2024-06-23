@@ -20,10 +20,10 @@ public class UnitTest1
             ElevationPassword: "495762",
             CniHost: LocalCniHost.Current);
 
-        var o = await CniRuntime.DeletePluginAsync(
+        var o = await CniRuntime.ProbePluginVersionsAsync(
             firstPlugin,
             runtimeOptions,
-            new PluginLookupOptions(Directory: "/home/kanpov/plugins/bin"));
-        Assert.Null(o);
+            pluginLookupOptions: new PluginLookupOptions(Directory: "/home/kanpov/plugins/bin"));
+        Console.WriteLine(o);
     }
 }

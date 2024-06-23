@@ -1,5 +1,6 @@
 using System.Text.Json;
 using CniDotNet.Data;
+using CniDotNet.Data.Results;
 
 namespace CniDotNet;
 
@@ -10,9 +11,11 @@ internal static class CniInvoker
         RuntimeOptions runtimeOptions,
         string operation,
         string pluginBinary,
+        AddCniResult? previousResult,
         CancellationToken cancellationToken)
     {
-        var stdinJson = DerivePluginInput(networkPlugin, runtimeOptions.CniVersion!, runtimeOptions.ContainerId);
+        var stdinJson = DerivePluginInput(networkPlugin, runtimeOptions.CniVersion!,
+            runtimeOptions.ContainerId, previousResult);
         var inputPath = runtimeOptions.CniHost.GetTempFilePath();
         await runtimeOptions.CniHost.WriteFileAsync(inputPath, stdinJson, cancellationToken);
         
@@ -35,24 +38,22 @@ internal static class CniInvoker
         return process.CurrentOutput;
     }
     
-    private static string DerivePluginInput(NetworkPlugin networkPlugin, string? cniVersion, string? name)
+    private static string DerivePluginInput(NetworkPlugin networkPlugin, string cniVersion, string name,
+        AddCniResult? previousResult)
     {
         var jsonNode = networkPlugin.PluginParameters.DeepClone();
+        jsonNode[Constants.Parsing.CniVersion] = cniVersion;
+        jsonNode[Constants.Parsing.Name] = name;
         jsonNode[Constants.Parsing.Type] = networkPlugin.Type;
-
-        if (cniVersion is not null)
-        {
-            jsonNode[Constants.Parsing.CniVersion] = cniVersion;
-        }
-
-        if (name is not null)
-        {
-            jsonNode[Constants.Parsing.Name] = name;
-        }
 
         if (networkPlugin.Capabilities is not null)
         {
             jsonNode[Constants.Parsing.RuntimeConfig] = networkPlugin.Capabilities;
+        }
+
+        if (previousResult is not null)
+        {
+            jsonNode[Constants.Parsing.PreviousResult] = JsonSerializer.SerializeToNode(previousResult)!.AsObject();
         }
 
         return JsonSerializer.Serialize(jsonNode);

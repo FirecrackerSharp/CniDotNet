@@ -65,14 +65,12 @@ public static class NetworkConfigurationLoader
 
     private static NetworkConfiguration LoadConfiguration(JsonNode jsonNode)
     {
-        var cniVersion = Version.Parse(jsonNode[Constants.Parsing.CniVersion]!.GetValue<string>());
+        var cniVersion = jsonNode[Constants.Parsing.CniVersion]!.GetValue<string>();
 
-        IEnumerable<Version>? cniVersions = null;
+        IEnumerable<string>? cniVersions = null;
         if (jsonNode.AsObject().ContainsKey(Constants.Parsing.CniVersions))
         {
-            cniVersions = jsonNode[Constants.Parsing.CniVersions]!
-                .AsArray().GetValues<string>()
-                .Select(Version.Parse);
+            cniVersions = jsonNode[Constants.Parsing.CniVersions]!.AsArray().GetValues<string>();
         }
 
         var name = jsonNode[Constants.Parsing.Name]!.GetValue<string>();
@@ -106,11 +104,6 @@ public static class NetworkConfigurationLoader
         pluginParameters.Remove(Constants.Parsing.Type);
         if (capabilities is not null) pluginParameters.Remove(Constants.Parsing.Capabilities);
 
-        var originalJson = JsonSerializer.Serialize(jsonNode);
-
-        return new NetworkPlugin(type, capabilities, pluginParameters)
-        {
-            OriginalJson = originalJson
-        };
+        return new NetworkPlugin(type, capabilities, pluginParameters);
     }
 }

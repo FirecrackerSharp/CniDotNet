@@ -2,7 +2,7 @@ using CniDotNet.Host;
 
 namespace CniDotNet.Data;
 
-public sealed record RuntimeOptions(
+public record RuntimeOptions(
     string ContainerId,
     string NetworkNamespace,
     string InterfaceName,

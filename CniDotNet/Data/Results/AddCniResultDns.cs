@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace CniDotNet.Data.Results.Add;
+namespace CniDotNet.Data.Results;
 
 public sealed record AddCniResultDns(
     [property: JsonPropertyName("nameservers")] string[] Nameservers,

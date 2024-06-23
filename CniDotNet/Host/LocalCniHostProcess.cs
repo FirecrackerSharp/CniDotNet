@@ -23,11 +23,6 @@ public class LocalCniHostProcess : ICniHostProcess
         };
     }
 
-    public async Task WriteAsync(string line, CancellationToken cancellationToken)
-    {
-        await _osProcess.StandardInput.WriteAsync(new StringBuilder(line), cancellationToken);
-    }
-
     public async Task WaitForExitAsync(CancellationToken cancellationToken)
     {
         await _osProcess.WaitForExitAsync(cancellationToken);

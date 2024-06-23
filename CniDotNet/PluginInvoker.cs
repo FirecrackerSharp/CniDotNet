@@ -13,7 +13,6 @@ internal static class PluginInvoker
     {
         var stdinJson = NetworkPluginParser.SaveToStringInternal(networkPlugin, runtimeOptions.CniVersion!, runtimeOptions.ContainerId);
         var inputPath = runtimeOptions.CniHost.GetTempFilePath();
-        var outputPath = runtimeOptions.CniHost.GetTempFilePath();
         await runtimeOptions.CniHost.WriteFileAsync(inputPath, stdinJson, cancellationToken);
         
         var environment = new Dictionary<string, string>

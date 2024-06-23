@@ -20,7 +20,7 @@ public class UnitTest1
             ElevationPassword: "495762",
             CniHost: LocalCniHost.Current);
 
-        await CniRuntime.AddSinglePluginAsync(
+        await CniRuntime.AddPluginAsync(
             firstPlugin,
             runtimeOptions,
             new PluginLookupOptions(Directory: "/home/kanpov/plugins/bin"));

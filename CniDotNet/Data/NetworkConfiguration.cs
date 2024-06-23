@@ -6,4 +6,4 @@ public sealed record NetworkConfiguration(
     IReadOnlyList<NetworkPlugin> Plugins,
     IEnumerable<Version>? CniVersions = null,
     bool DisableCheck = false,
-    bool DisableGC = false);
+    bool DisableGc = false);

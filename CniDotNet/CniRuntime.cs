@@ -1,4 +1,6 @@
+using System.Text.Json;
 using CniDotNet.Data;
+using CniDotNet.Data.Results;
 using CniDotNet.Host;
 
 namespace CniDotNet;
@@ -7,15 +9,15 @@ public static class CniRuntime
 {
     private const string OperationAdd = "ADD";
     
-    public static async Task AddSinglePluginAsync(
+    public static async Task<AddResult> AddPluginAsync(
         NetworkPlugin networkPlugin,
         RuntimeOptions runtimeOptions,
         PluginLookupOptions? pluginLookupOptions = null,
         CancellationToken cancellationToken = default)
     {
         var pluginBinary = LookupPluginBinary(runtimeOptions.CniHost, networkPlugin, pluginLookupOptions);
-        var s = await PluginInvoker.InvokeAsync(networkPlugin, runtimeOptions, OperationAdd, pluginBinary!, cancellationToken);
-        Console.WriteLine(s);
+        var addResultJson = await PluginInvoker.InvokeAsync(networkPlugin, runtimeOptions, OperationAdd, pluginBinary!, cancellationToken);
+        return JsonSerializer.Deserialize<AddResult>(addResultJson) ?? throw new JsonException("Could not deserialize AddResult");
     }
 
     private static string? LookupPluginBinary(ICniHost cniHost,

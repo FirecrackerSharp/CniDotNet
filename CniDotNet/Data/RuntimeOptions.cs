@@ -10,4 +10,4 @@ public sealed record RuntimeOptions(
     string? ElevationPassword = null,
     string? CniVersion = null,
     string? PluginPath = null,
-    string SudoPath = "/bin/sudo");
+    string SuPath = "/bin/su");

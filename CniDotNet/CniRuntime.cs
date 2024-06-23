@@ -14,7 +14,8 @@ public static class CniRuntime
         CancellationToken cancellationToken = default)
     {
         var pluginBinary = LookupPluginBinary(runtimeOptions.CniHost, networkPlugin, pluginLookupOptions);
-        await PluginInvoker.InvokeAsync(networkPlugin, runtimeOptions, OperationAdd, pluginBinary!, cancellationToken);
+        var s = await PluginInvoker.InvokeAsync(networkPlugin, runtimeOptions, OperationAdd, pluginBinary!, cancellationToken);
+        Console.WriteLine(s);
     }
 
     private static string? LookupPluginBinary(ICniHost cniHost,

@@ -4,6 +4,10 @@ public interface ICniHost
 {
     bool FileExists(string path);
 
+    string GetTempFilePath();
+
+    Task WriteFileAsync(string path, string content, CancellationToken cancellationToken);
+
     bool DirectoryExists(string path);
 
     Task<string> ReadFileAsync(string path, CancellationToken cancellationToken);
@@ -13,5 +17,5 @@ public interface ICniHost
     bool IsRoot { get; }
     
     Task<ICniHostProcess> StartProcessWithElevationAsync(string command, Dictionary<string, string> environment,
-        string elevationPassword, string sudoPath, CancellationToken cancellationToken);
+        string elevationPassword, string suPath, CancellationToken cancellationToken);
 }

@@ -14,6 +14,16 @@ public sealed class LocalCniHost : ICniHost
         return File.Exists(path);
     }
 
+    public string GetTempFilePath()
+    {
+        return Path.GetTempFileName();
+    }
+
+    public Task WriteFileAsync(string path, string content, CancellationToken cancellationToken)
+    {
+        return File.WriteAllTextAsync(path, content, cancellationToken);
+    }
+
     public bool DirectoryExists(string path)
     {
         return Directory.Exists(path);
@@ -32,7 +42,7 @@ public sealed class LocalCniHost : ICniHost
     public bool IsRoot => Environment.UserName == "root";
 
     public async Task<ICniHostProcess> StartProcessWithElevationAsync(string command, Dictionary<string, string> environment,
-        string elevationPassword, string sudoPath, CancellationToken cancellationToken)
+        string elevationPassword, string suPath, CancellationToken cancellationToken)
     {
         var environmentBuilder = new StringBuilder();
 
@@ -43,11 +53,9 @@ public sealed class LocalCniHost : ICniHost
 
         var environmentString = environmentBuilder.ToString().TrimEnd();
 
-        var arguments = $"{environmentString} -S sh -c '{command}'";
-
         var process = new Process
         {
-            StartInfo = new ProcessStartInfo(sudoPath, arguments)
+            StartInfo = new ProcessStartInfo(suPath)
             {
                 RedirectStandardOutput = true,
                 RedirectStandardInput = true,
@@ -56,8 +64,11 @@ public sealed class LocalCniHost : ICniHost
         };
 
         process.Start();
+        var cniHostProcess = new LocalCniHostProcess(process);
+        
         await process.StandardInput.WriteLineAsync(new StringBuilder(elevationPassword), cancellationToken);
+        await process.StandardInput.WriteLineAsync(new StringBuilder($"{environmentString} {command} ; exit"), cancellationToken);
 
-        return new LocalCniHostProcess(process);
+        return cniHostProcess;
     }
 }

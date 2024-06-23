@@ -12,6 +12,7 @@ internal static class Constants
         public const string Plugins = "plugins";
         public const string Type = "type";
         public const string Capabilities = "capabilities";
+        public const string RuntimeConfig = "runtimeConfig";
     }
 
     internal static class Environment

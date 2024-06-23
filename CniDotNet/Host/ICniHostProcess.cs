@@ -2,7 +2,9 @@ namespace CniDotNet.Host;
 
 public interface ICniHostProcess
 {
-    Task WriteLineAsync(string line, CancellationToken cancellationToken);
+    string CurrentOutput { get; }
+    
+    Task WriteAsync(string line, CancellationToken cancellationToken);
 
-    Task<string> WaitForExitAsync(CancellationToken cancellationToken);
+    Task WaitForExitAsync(CancellationToken cancellationToken);
 }

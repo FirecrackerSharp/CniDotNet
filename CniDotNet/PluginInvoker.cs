@@ -12,6 +12,10 @@ internal static class PluginInvoker
         CancellationToken cancellationToken)
     {
         var stdinJson = NetworkPluginParser.SaveToStringInternal(networkPlugin, runtimeOptions.CniVersion!, runtimeOptions.ContainerId);
+        var inputPath = runtimeOptions.CniHost.GetTempFilePath();
+        var outputPath = runtimeOptions.CniHost.GetTempFilePath();
+        await runtimeOptions.CniHost.WriteFileAsync(inputPath, stdinJson, cancellationToken);
+        
         var environment = new Dictionary<string, string>
         {
             { Constants.Environment.Command, operation },
@@ -25,7 +29,9 @@ internal static class PluginInvoker
         }
 
         var process = await runtimeOptions.CniHost.StartProcessWithElevationAsync(
-            pluginBinary, environment, runtimeOptions.ElevationPassword!, runtimeOptions.SudoPath, cancellationToken);
-        return await process.WaitForExitAsync(cancellationToken);
+            $"{pluginBinary} < {inputPath}", environment, runtimeOptions.ElevationPassword!,
+            runtimeOptions.SuPath, cancellationToken);
+        await process.WaitForExitAsync(cancellationToken);
+        return process.CurrentOutput;
     }
 }

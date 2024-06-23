@@ -13,27 +13,16 @@ public class UnitTest1
         var firstPlugin = conf!.Plugins[0];
         var runtimeOptions = new RuntimeOptions(
             ContainerId: "fcnet",
-            NetworkNamespace: "testing",
+            NetworkNamespace: "/var/run/netns/testing",
             InterfaceName: "eth0",
             CniVersion: "1.0.0",
-            ElevationPassword: "",
+            PluginPath: "/home/kanpov/plugins/bin",
+            ElevationPassword: "495762",
             CniHost: LocalCniHost.Current);
 
         await CniRuntime.AddSinglePluginAsync(
             firstPlugin,
             runtimeOptions,
             new PluginLookupOptions(Directory: "/home/kanpov/plugins/bin"));
-    }
-
-    [Fact]
-    public async Task Test2()
-    {
-        var proc = await LocalCniHost.Current.StartProcessWithElevationAsync(
-            "/home/kanpov/plugins/bin/ptp", new Dictionary<string, string>
-            {
-                { "CNI_COMMAND", "VERSION" }
-            }, "495762", "/bin/sudo", default);
-        var output = await proc.WaitForExitAsync(default);
-        Console.WriteLine(output);
     }
 }

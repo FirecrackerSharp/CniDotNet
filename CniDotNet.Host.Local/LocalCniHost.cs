@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Text;
 using CniDotNet.Data;
 
-namespace CniDotNet.Host;
+namespace CniDotNet.Host.Local;
 
 public sealed class LocalCniHost : ICniHost
 {

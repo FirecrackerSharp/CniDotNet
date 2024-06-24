@@ -1,9 +1,9 @@
 using System.Diagnostics;
 using System.Text;
 
-namespace CniDotNet.Host;
+namespace CniDotNet.Host.Local;
 
-public class LocalCniHostProcess : ICniHostProcess
+internal sealed class LocalCniHostProcess : ICniHostProcess
 {
     private readonly Process _osProcess;
     private readonly StringBuilder _outputBuilder = new();

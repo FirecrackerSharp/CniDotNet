@@ -1,3 +1,4 @@
+using CniDotNet.Host.Local;
 using CniDotNet.Data;
 using CniDotNet.Host;
 using CniDotNet.Runtime;
@@ -13,10 +14,7 @@ public class UnitTest1
         var ptp = new PtpPlugin(
             new HostLocalIpam(
                 ResolvConf: "/etc/resolv.conf",
-                Ranges:
-                [
-                    [new HostLocalIpamRange(Subnet: "192.168.127.0/24")]
-                ]),
+                Ranges: [[new HostLocalIpamRange(Subnet: "192.168.127.0/24")]]),
             IpMasq: true);
         var firewall = new FirewallPlugin();
         var tcRedirectTap = new TcRedirectTapPlugin();

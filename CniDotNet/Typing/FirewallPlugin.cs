@@ -2,7 +2,7 @@ using System.Text.Json.Nodes;
 
 namespace CniDotNet.Typing;
 
-public record FirewallPlugin(
+public sealed record FirewallPlugin(
     FirewallBackend? Backend = null,
     string? IptablesAdminChainName = null,
     string? FirewalldZone = null,

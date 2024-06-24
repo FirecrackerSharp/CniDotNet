@@ -141,7 +141,7 @@ public static class CniRuntime
             await MutativeOperationLock.Semaphore.WaitAsync(cancellationToken);
             var pluginBinary = SearchForPluginBinary(plugin, runtimeOptions);
             var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Add,
-                pluginBinary!, previousResult, cancellationToken);
+                pluginBinary, previousResult, cancellationToken);
             return WrapCniResultWithOutput<AddCniResult>(resultJson);
         }
         finally
@@ -161,7 +161,7 @@ public static class CniRuntime
             await MutativeOperationLock.Semaphore.WaitAsync(cancellationToken);
             var pluginBinary = SearchForPluginBinary(plugin, runtimeOptions);
             var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Delete,
-                pluginBinary!, previousResult, cancellationToken);
+                pluginBinary, previousResult, cancellationToken);
             return WrapCniResultWithoutOutput(resultJson);
         }
         finally
@@ -178,7 +178,7 @@ public static class CniRuntime
     {
         var pluginBinary = SearchForPluginBinary(plugin, runtimeOptions);
         var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Check,
-            pluginBinary!, previousResult, cancellationToken);
+            pluginBinary, previousResult, cancellationToken);
         return WrapCniResultWithoutOutput(resultJson);
     }
 
@@ -189,7 +189,7 @@ public static class CniRuntime
     {
         var pluginBinary = SearchForPluginBinary(plugin, runtimeOptions);
         var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Status,
-            pluginBinary!, previousResult: null, cancellationToken);
+            pluginBinary, previousResult: null, cancellationToken);
         return WrapCniResultWithoutOutput(resultJson);
     }
     
@@ -200,7 +200,7 @@ public static class CniRuntime
     {
         var pluginBinary = SearchForPluginBinary(plugin, runtimeOptions);
         var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.ProbeVersions,
-            pluginBinary!, previousResult: null, cancellationToken);
+            pluginBinary, previousResult: null, cancellationToken);
         return WrapCniResultWithOutput<VersionCniResult>(resultJson);
     }
 
@@ -215,7 +215,7 @@ public static class CniRuntime
             var pluginBinary = SearchForPluginBinary(plugin, runtimeOptions);
             var resultJson = await InvokeAsync(plugin, runtimeOptions,
                 operation: Constants.Operations.GarbageCollect,
-                pluginBinary!, previousResult: null, cancellationToken);
+                pluginBinary, previousResult: null, cancellationToken);
             return WrapCniResultWithoutOutput(resultJson);
         }
         finally
@@ -243,16 +243,28 @@ public static class CniRuntime
             : JsonSerializer.Deserialize<ErrorCniResult>(resultJson);
     }
 
-    private static string? SearchForPluginBinary(Plugin plugin, RuntimeOptions runtimeOptions)
+    private static string SearchForPluginBinary(Plugin plugin, RuntimeOptions runtimeOptions)
     {
-        var directory = runtimeOptions.PluginSearchOptions.ActualDirectory;
-        if (directory is null) return null;
+        var matchFromTable = runtimeOptions.PluginSearchOptions.SearchTable?.GetValueOrDefault(plugin.Type);
+        if (matchFromTable is not null) return matchFromTable;
 
-        if (!runtimeOptions.InvocationOptions.CniHost.DirectoryExists(directory)) return null;
+        var directory = runtimeOptions.PluginSearchOptions.ActualDirectory;
+        if (directory is null)
+        {
+            throw new PluginNotFoundException($"Could not find \"{plugin.Type}\" plugin: directory wasn't specified and" +
+                                              $"environment variable doesn't exist");
+        }
+
+        if (!runtimeOptions.InvocationOptions.CniHost.DirectoryExists(directory))
+        {
+            throw new PluginNotFoundException($"Could not find \"{plugin.Type}\" plugin: \"{directory}\" directory" +
+                                              $"doesn't exist");
+        }
 
         var matchingFiles = runtimeOptions.InvocationOptions.CniHost.EnumerateDirectory(
             directory, plugin.Type, runtimeOptions.PluginSearchOptions.DirectorySearchOption);
-        return matchingFiles.FirstOrDefault();
+        return matchingFiles.FirstOrDefault() ?? throw new PluginNotFoundException($"Could not find \"{plugin.Type}\"" +
+            $"plugin: the file doesn't exist according to the given search option in the \"{directory}\" directory");
     }
 
     private static async Task<string> InvokeAsync(

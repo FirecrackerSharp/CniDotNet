@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CniDotNet", "CniDotNet\CniD
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CniDotNet.Tests", "CniDotNet.Tests\CniDotNet.Tests.csproj", "{051F9F85-B61D-4690-A14A-CD11EF30E57A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CniDotNet.Host.Local", "CniDotNet.Host.Local\CniDotNet.Host.Local.csproj", "{1A49F2C6-BC13-4C76-A454-3B29A216F5F4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{051F9F85-B61D-4690-A14A-CD11EF30E57A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{051F9F85-B61D-4690-A14A-CD11EF30E57A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{051F9F85-B61D-4690-A14A-CD11EF30E57A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1A49F2C6-BC13-4C76-A454-3B29A216F5F4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1A49F2C6-BC13-4C76-A454-3B29A216F5F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1A49F2C6-BC13-4C76-A454-3B29A216F5F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1A49F2C6-BC13-4C76-A454-3B29A216F5F4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

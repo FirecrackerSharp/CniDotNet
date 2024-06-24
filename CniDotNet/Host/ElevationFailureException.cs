@@ -1,3 +1,3 @@
 namespace CniDotNet.Host;
 
-public class ElevationFailureException(string message) : Exception(message);
+public sealed class ElevationFailureException(string message) : Exception(message);

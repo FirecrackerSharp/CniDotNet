@@ -5,7 +5,7 @@ using CniDotNet.Runtime;
 
 namespace CniDotNet.Typing;
 
-public record PtpPlugin(
+public sealed record PtpPlugin(
     object Ipam,
     bool? IpMasq = null,
     int? Mtu = null,

@@ -21,6 +21,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\CniDotNet.Host.Local\CniDotNet.Host.Local.csproj" />
       <ProjectReference Include="..\CniDotNet\CniDotNet.csproj" />
     </ItemGroup>
 

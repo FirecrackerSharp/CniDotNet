@@ -9,11 +9,6 @@ public sealed class LocalCniHost : ICniHost
     public static LocalCniHost Current { get; } = new();
     
     private LocalCniHost() {}
-    
-    public bool FileExists(string path)
-    {
-        return File.Exists(path);
-    }
 
     public string GetTempFilePath()
     {
@@ -33,6 +28,11 @@ public sealed class LocalCniHost : ICniHost
     public async Task<string> ReadFileAsync(string path, CancellationToken cancellationToken)
     {
         return await File.ReadAllTextAsync(path, cancellationToken);
+    }
+
+    public void DeleteFile(string path)
+    {
+        File.Delete(path);
     }
 
     public IEnumerable<string> EnumerateDirectory(string path, string searchPattern, SearchOption searchOption)

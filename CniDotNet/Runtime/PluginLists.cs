@@ -5,77 +5,77 @@ using CniDotNet.Host;
 
 namespace CniDotNet.Runtime;
 
-public static class NetworkLists
+public static class PluginLists
 {
-    public static async Task<NetworkList?> LookupFirstAsync(
-        ICniHost cniHost, NetworkListLookupOptions networkListLookupOptions, CancellationToken cancellationToken = default)
+    public static async Task<PluginList?> SearchFirstAsync(
+        ICniHost cniHost, PluginListSearchOptions pluginListSearchOptions, CancellationToken cancellationToken = default)
     {
-        var matches = await LookupManyAsync(cniHost, networkListLookupOptions, cancellationToken);
+        var matches = await SearchAsync(cniHost, pluginListSearchOptions, cancellationToken);
         return matches.Count == 0 ? null : matches[0];
     }
     
-    public static async Task<IReadOnlyList<NetworkList>> LookupManyAsync(
-        ICniHost cniHost, NetworkListLookupOptions networkListLookupOptions, CancellationToken cancellationToken = default)
+    public static async Task<IReadOnlyList<PluginList>> SearchAsync(
+        ICniHost cniHost, PluginListSearchOptions pluginListSearchOptions, CancellationToken cancellationToken = default)
     {
-        var directory = networkListLookupOptions.Directory ??
-                        Environment.GetEnvironmentVariable(networkListLookupOptions.EnvironmentVariable);
+        var directory = pluginListSearchOptions.Directory ??
+                        Environment.GetEnvironmentVariable(pluginListSearchOptions.EnvironmentVariable);
         if (directory is null) return [];
 
         if (!cniHost.DirectoryExists(directory)) return [];
 
         var files = cniHost
-            .EnumerateDirectory(directory, networkListLookupOptions.SearchQuery ?? "", networkListLookupOptions.DirectorySearchOption)
-            .Where(f => networkListLookupOptions.FileExtensions.Contains(Path.GetExtension(f)));
+            .EnumerateDirectory(directory, pluginListSearchOptions.SearchQuery ?? "", pluginListSearchOptions.DirectorySearchOption)
+            .Where(f => pluginListSearchOptions.FileExtensions.Contains(Path.GetExtension(f)));
 
-        var networkLists = new List<NetworkList>();
+        var pluginLists = new List<PluginList>();
 
         foreach (var file in files)
         {
             try
             {
-                var configuration = await LoadFromFileAsync(cniHost, file, cancellationToken);
-                networkLists.Add(configuration);
+                var pluginList = await LoadFromFileAsync(cniHost, file, cancellationToken);
+                pluginLists.Add(pluginList);
             }
             catch (Exception)
             {
-                if (networkListLookupOptions.ProceedAfterFailure) continue;
+                if (pluginListSearchOptions.ProceedAfterFailure) continue;
                 return [];
             }
         }
 
-        return networkLists;
+        return pluginLists;
     }
     
-    public static async Task<NetworkList> LoadFromFileAsync(
+    public static async Task<PluginList> LoadFromFileAsync(
         ICniHost cniHost, string filePath, CancellationToken cancellationToken = default)
     {
         var sourceString = await cniHost.ReadFileAsync(filePath, cancellationToken);
         return LoadFromString(sourceString);
     }
 
-    public static NetworkList LoadFromString(string sourceString)
+    public static PluginList LoadFromString(string sourceString)
     {
         var jsonNode = JsonSerializer.Deserialize<JsonNode>(sourceString)!;
-        var configuration = LoadNetworkList(jsonNode);
+        var configuration = LoadPluginList(jsonNode);
 
         return configuration;
     }
 
     public static async Task SaveToFileAsync(
-        NetworkList networkList, ICniHost cniHost, string filePath, bool prettyPrint = true, CancellationToken cancellationToken = default)
+        PluginList pluginList, ICniHost cniHost, string filePath, bool prettyPrint = true, CancellationToken cancellationToken = default)
     {
-        var content = SaveToString(networkList, prettyPrint);
+        var content = SaveToString(pluginList, prettyPrint);
         await cniHost.WriteFileAsync(filePath, content, cancellationToken);
     }
 
-    public static string SaveToString(NetworkList networkList, bool prettyPrint = true)
+    public static string SaveToString(PluginList pluginList, bool prettyPrint = true)
     {
-        var jsonObject = SaveNetworkList(networkList);
+        var jsonObject = SavePluginList(pluginList);
         return JsonSerializer.Serialize(jsonObject,
             prettyPrint ? CniRuntime.PrettyPrintSerializerOptions : CniRuntime.SerializerOptions);
     }
 
-    private static NetworkList LoadNetworkList(JsonNode jsonNode)
+    private static PluginList LoadPluginList(JsonNode jsonNode)
     {
         var cniVersion = jsonNode[Constants.Parsing.CniVersion]!.GetValue<string>();
 
@@ -100,14 +100,14 @@ public static class NetworkLists
         }
 
         var networks = jsonNode[Constants.Parsing.Plugins]!.AsArray()
-            .Select(pluginJsonNode => LoadNetwork(pluginJsonNode!))
+            .Select(pluginJsonNode => LoadPlugin(pluginJsonNode!))
             .ToList();
 
-        return new NetworkList(
+        return new PluginList(
             cniVersion, name, networks, cniVersions, disableCheck, disableGc);
     }
 
-    private static Network LoadNetwork(JsonNode jsonNode)
+    private static Plugin LoadPlugin(JsonNode jsonNode)
     {
         var type = jsonNode[Constants.Parsing.Type]!.GetValue<string>();
         var capabilities = jsonNode[Constants.Parsing.Capabilities]?.AsObject();
@@ -116,21 +116,21 @@ public static class NetworkLists
         pluginParameters.Remove(Constants.Parsing.Type);
         if (capabilities is not null) pluginParameters.Remove(Constants.Parsing.Capabilities);
 
-        return new Network(type, capabilities, pluginParameters);
+        return new Plugin(type, capabilities, pluginParameters);
     }
 
-    private static JsonObject SaveNetworkList(NetworkList networkList)
+    private static JsonObject SavePluginList(PluginList pluginList)
     {
         var jsonObject = new JsonObject
         {
-            [Constants.Parsing.CniVersion] = networkList.CniVersion,
-            [Constants.Parsing.Name] = networkList.Name
+            [Constants.Parsing.CniVersion] = pluginList.CniVersion,
+            [Constants.Parsing.Name] = pluginList.Name
         };
 
-        if (networkList.CniVersions is not null)
+        if (pluginList.CniVersions is not null)
         {
             var versionArray = new JsonArray();
-            foreach (var cniVersion in networkList.CniVersions)
+            foreach (var cniVersion in pluginList.CniVersions)
             {
                 versionArray.Add(cniVersion);
             }
@@ -138,20 +138,20 @@ public static class NetworkLists
             jsonObject[Constants.Parsing.CniVersions] = versionArray;
         }
 
-        if (networkList.DisableCheck)
+        if (pluginList.DisableCheck)
         {
-            jsonObject[Constants.Parsing.DisableCheck] = networkList.DisableCheck;
+            jsonObject[Constants.Parsing.DisableCheck] = pluginList.DisableCheck;
         }
 
-        if (networkList.DisableGc)
+        if (pluginList.DisableGc)
         {
-            jsonObject[Constants.Parsing.DisableGc] = networkList.DisableGc;
+            jsonObject[Constants.Parsing.DisableGc] = pluginList.DisableGc;
         }
 
         var networkArray = new JsonArray();
-        foreach (var network in networkList.Networks)
+        foreach (var network in pluginList.Plugins)
         {
-            networkArray.Add(SaveNetwork(network));
+            networkArray.Add(SavePlugin(network));
         }
 
         jsonObject[Constants.Parsing.Plugins] = networkArray;
@@ -159,14 +159,14 @@ public static class NetworkLists
         return jsonObject;
     }
 
-    private static JsonObject SaveNetwork(Network network)
+    private static JsonObject SavePlugin(Plugin plugin)
     {
-        var jsonObject = network.PluginParameters;
-        jsonObject[Constants.Parsing.Type] = network.Type;
+        var jsonObject = plugin.PluginParameters;
+        jsonObject[Constants.Parsing.Type] = plugin.Type;
 
-        if (network.Capabilities is not null)
+        if (plugin.Capabilities is not null)
         {
-            jsonObject[Constants.Parsing.Capabilities] = network.Capabilities;
+            jsonObject[Constants.Parsing.Capabilities] = plugin.Capabilities;
         }
 
         return jsonObject;

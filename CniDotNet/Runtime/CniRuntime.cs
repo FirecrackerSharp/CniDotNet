@@ -2,12 +2,13 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using CniDotNet.Data;
 using CniDotNet.Data.Results;
-using CniDotNet.Host;
 
 namespace CniDotNet.Runtime;
 
 public static class CniRuntime
 {
+    public static CniLock MutativeOperationLock { get; } = new();
+    
     internal static readonly JsonSerializerOptions SerializerOptions = new()
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
@@ -19,18 +20,17 @@ public static class CniRuntime
         WriteIndented = true
     };
     
-    public static async Task<WrappedCniResult<AddCniResult>> AddNetworkListAsync(
-        NetworkList networkList,
-        CniInvocationOptions cniInvocationOptions,
-        PluginLookupOptions? pluginLookupOptions = null,
+    public static async Task<WrappedCniResult<AddCniResult>> AddPluginListAsync(
+        PluginList pluginList,
+        RuntimeOptions runtimeOptions,
         CancellationToken cancellationToken = default)
     {
         AddCniResult? previousResult = null;
 
-        foreach (var networkPlugin in networkList.Networks)
+        foreach (var plugin in pluginList.Plugins)
         {
-            var wrappedResult = await AddNetworkAsync(
-                networkPlugin, cniInvocationOptions, pluginLookupOptions, previousResult, cancellationToken);
+            var wrappedResult = await AddPluginAsync(
+                plugin, runtimeOptions, previousResult, cancellationToken);
             previousResult = wrappedResult.SuccessValue;
             
             if (wrappedResult.IsError)
@@ -42,150 +42,186 @@ public static class CniRuntime
         return WrappedCniResult<AddCniResult>.Success(previousResult!);
     }
 
-    public static async Task<ErrorCniResult?> DeleteNetworkListAsync(
-        NetworkList networkList,
-        CniInvocationOptions cniInvocationOptions,
+    public static async Task<ErrorCniResult?> DeletePluginListAsync(
+        PluginList pluginList,
+        RuntimeOptions runtimeOptions,
         AddCniResult previousResult,
-        PluginLookupOptions? pluginLookupOptions = null,
         CancellationToken cancellationToken = default)
     {
-        for (var i = networkList.Networks.Count - 1; i >= 0; i--)
+        for (var i = pluginList.Plugins.Count - 1; i >= 0; i--)
         {
-            var networkPlugin = networkList.Networks[i];
-            var errorCniResult = await DeleteNetworkAsync(
-                networkPlugin, cniInvocationOptions, pluginLookupOptions, previousResult, cancellationToken);
+            var plugin = pluginList.Plugins[i];
+            var errorCniResult = await DeletePluginAsync(
+                plugin, runtimeOptions, previousResult, cancellationToken);
             if (errorCniResult is not null) return errorCniResult;
         }
 
         return null;
     }
 
-    public static async Task<ErrorCniResult?> CheckNetworkListAsync(
-        NetworkList networkList,
-        CniInvocationOptions cniInvocationOptions,
+    public static async Task<ErrorCniResult?> CheckPluginListAsync(
+        PluginList pluginList,
+        RuntimeOptions runtimeOptions,
         AddCniResult previousResult,
-        PluginLookupOptions? pluginLookupOptions = null,
         CancellationToken cancellationToken = default)
     {
-        if (networkList.DisableCheck) return null;
+        if (pluginList.DisableCheck) return null;
         
-        foreach (var networkPlugin in networkList.Networks)
+        foreach (var plugin in pluginList.Plugins)
         {
-            var errorCniResult = await CheckNetworkAsync(networkPlugin, cniInvocationOptions, previousResult,
-                pluginLookupOptions, cancellationToken);
+            var errorCniResult = await CheckPluginAsync(plugin, runtimeOptions, previousResult, cancellationToken);
             if (errorCniResult is not null) return errorCniResult;
         }
 
         return null;
     }
 
-    public static async Task<ErrorCniResult?> VerifyNetworkListReadinessAsync(
-        NetworkList networkList,
-        CniInvocationOptions cniInvocationOptions,
-        PluginLookupOptions? pluginLookupOptions = null,
+    public static async Task<ErrorCniResult?> VerifyPluginListReadinessAsync(
+        PluginList pluginList,
+        RuntimeOptions runtimeOptions,
         CancellationToken cancellationToken = default)
     {
-        foreach (var networkPlugin in networkList.Networks)
+        foreach (var plugin in pluginList.Plugins)
         {
-            var errorCniResult = await VerifyNetworkReadinessAsync(networkPlugin, cniInvocationOptions, pluginLookupOptions,
-                cancellationToken);
+            var errorCniResult = await VerifyPluginReadinessAsync(plugin, runtimeOptions, cancellationToken);
             if (errorCniResult is not null) return errorCniResult;
         }
 
         return null;
     }
 
-    public static async Task<ErrorCniResult?> GarbageCollectNetworkListAsync(
-        NetworkList networkList,
-        CniInvocationOptions cniInvocationOptions,
-        PluginLookupOptions? pluginLookupOptions = null,
+    public static async Task<WrappedCniResult<IReadOnlyDictionary<Plugin, VersionCniResult>>> ProbePluginListVersionsAsync(
+        PluginList pluginList,
+        RuntimeOptions runtimeOptions,
         CancellationToken cancellationToken = default)
     {
-        if (networkList.DisableGc) return null;
+        var results = new Dictionary<Plugin, VersionCniResult>();
 
-        foreach (var networkPlugin in networkList.Networks)
+        foreach (var plugin in pluginList.Plugins)
         {
-            var errorCniResult = await GarbageCollectNetworkAsync(networkPlugin, cniInvocationOptions, pluginLookupOptions,
-                cancellationToken);
+            var wrappedResult = await ProbePluginVersionsAsync(plugin, runtimeOptions, cancellationToken);
+
+            if (wrappedResult.IsSuccess)
+            {
+                results[plugin] = wrappedResult.SuccessValue!;
+            }
+            else
+            {
+                return WrappedCniResult<IReadOnlyDictionary<Plugin, VersionCniResult>>.Error(wrappedResult.ErrorValue!);
+            }
+        }
+        
+        return WrappedCniResult<IReadOnlyDictionary<Plugin, VersionCniResult>>.Success(results);
+    }
+
+    public static async Task<ErrorCniResult?> GarbageCollectPluginListAsync(
+        PluginList pluginList,
+        RuntimeOptions runtimeOptions,
+        CancellationToken cancellationToken = default)
+    {
+        if (pluginList.DisableGc) return null;
+
+        foreach (var plugin in pluginList.Plugins)
+        {
+            var errorCniResult = await GarbageCollectPluginAsync(plugin, runtimeOptions, cancellationToken);
             if (errorCniResult is not null) return errorCniResult;
         }
 
         return null;
     }
 
-    public static async Task<WrappedCniResult<AddCniResult>> AddNetworkAsync(
-        Network network,
-        CniInvocationOptions cniInvocationOptions,
-        PluginLookupOptions? pluginLookupOptions = null,
+    public static async Task<WrappedCniResult<AddCniResult>> AddPluginAsync(
+        Plugin plugin,
+        RuntimeOptions runtimeOptions,
         AddCniResult? previousResult = null,
         CancellationToken cancellationToken = default)
     {
-        var pluginBinary = LookupPluginBinary(cniInvocationOptions.InvocationOptions.CniHost, network, pluginLookupOptions);
-        var resultJson = await CniInvoker.InvokeAsync(network, cniInvocationOptions, operation: Constants.Operations.Add,
-            pluginBinary!, previousResult, cancellationToken);
-        return WrapCniResultWithOutput<AddCniResult>(resultJson);
+        try
+        {
+            await MutativeOperationLock.Semaphore.WaitAsync(cancellationToken);
+            var pluginBinary = SearchForPluginBinary(plugin, runtimeOptions);
+            var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Add,
+                pluginBinary!, previousResult, cancellationToken);
+            return WrapCniResultWithOutput<AddCniResult>(resultJson);
+        }
+        finally
+        {
+            MutativeOperationLock.Semaphore.Release();
+        }
     }
     
-    public static async Task<ErrorCniResult?> DeleteNetworkAsync(
-        Network network,
-        CniInvocationOptions cniInvocationOptions,
-        PluginLookupOptions? pluginLookupOptions = null,
+    public static async Task<ErrorCniResult?> DeletePluginAsync(
+        Plugin plugin,
+        RuntimeOptions runtimeOptions,
         AddCniResult? previousResult = null,
         CancellationToken cancellationToken = default)
     {
-        var pluginBinary = LookupPluginBinary(cniInvocationOptions.InvocationOptions.CniHost, network, pluginLookupOptions);
-        var resultJson = await CniInvoker.InvokeAsync(network, cniInvocationOptions, operation: Constants.Operations.Delete,
-            pluginBinary!, previousResult, cancellationToken);
-        return WrapCniResultWithoutOutput(resultJson);
+        try
+        {
+            await MutativeOperationLock.Semaphore.WaitAsync(cancellationToken);
+            var pluginBinary = SearchForPluginBinary(plugin, runtimeOptions);
+            var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Delete,
+                pluginBinary!, previousResult, cancellationToken);
+            return WrapCniResultWithoutOutput(resultJson);
+        }
+        finally
+        {
+            MutativeOperationLock.Semaphore.Release();
+        }
     }
 
-    public static async Task<ErrorCniResult?> CheckNetworkAsync(
-        Network network,
-        CniInvocationOptions cniInvocationOptions,
+    public static async Task<ErrorCniResult?> CheckPluginAsync(
+        Plugin plugin,
+        RuntimeOptions runtimeOptions,
         AddCniResult previousResult,
-        PluginLookupOptions? pluginLookupOptions = null,
         CancellationToken cancellationToken = default)
     {
-        var pluginBinary = LookupPluginBinary(cniInvocationOptions.InvocationOptions.CniHost, network, pluginLookupOptions);
-        var resultJson = await CniInvoker.InvokeAsync(network, cniInvocationOptions, operation: Constants.Operations.Check,
+        var pluginBinary = SearchForPluginBinary(plugin, runtimeOptions);
+        var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Check,
             pluginBinary!, previousResult, cancellationToken);
         return WrapCniResultWithoutOutput(resultJson);
     }
 
-    public static async Task<ErrorCniResult?> VerifyNetworkReadinessAsync(
-        Network network,
-        CniInvocationOptions cniInvocationOptions,
-        PluginLookupOptions? pluginLookupOptions = null,
+    public static async Task<ErrorCniResult?> VerifyPluginReadinessAsync(
+        Plugin plugin,
+        RuntimeOptions runtimeOptions,
         CancellationToken cancellationToken = default)
     {
-        var pluginBinary = LookupPluginBinary(cniInvocationOptions.InvocationOptions.CniHost, network, pluginLookupOptions);
-        var resultJson = await CniInvoker.InvokeAsync(network, cniInvocationOptions, operation: Constants.Operations.Status,
+        var pluginBinary = SearchForPluginBinary(plugin, runtimeOptions);
+        var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Status,
             pluginBinary!, previousResult: null, cancellationToken);
         return WrapCniResultWithoutOutput(resultJson);
     }
     
-    public static async Task<WrappedCniResult<VersionCniResult>> ProbeNetworkVersionsAsync(
-        Network network,
-        CniInvocationOptions cniInvocationOptions,
-        PluginLookupOptions? pluginLookupOptions = null,
+    public static async Task<WrappedCniResult<VersionCniResult>> ProbePluginVersionsAsync(
+        Plugin plugin,
+        RuntimeOptions runtimeOptions,
         CancellationToken cancellationToken = default)
     {
-        var pluginBinary = LookupPluginBinary(cniInvocationOptions.InvocationOptions.CniHost, network, pluginLookupOptions);
-        var resultJson = await CniInvoker.InvokeAsync(network, cniInvocationOptions, operation: Constants.Operations.ProbeVersions,
+        var pluginBinary = SearchForPluginBinary(plugin, runtimeOptions);
+        var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.ProbeVersions,
             pluginBinary!, previousResult: null, cancellationToken);
         return WrapCniResultWithOutput<VersionCniResult>(resultJson);
     }
 
-    public static async Task<ErrorCniResult?> GarbageCollectNetworkAsync(
-        Network network,
-        CniInvocationOptions cniInvocationOptions,
-        PluginLookupOptions? pluginLookupOptions = null,
+    public static async Task<ErrorCniResult?> GarbageCollectPluginAsync(
+        Plugin plugin,
+        RuntimeOptions runtimeOptions,
         CancellationToken cancellationToken = default)
     {
-        var pluginBinary = LookupPluginBinary(cniInvocationOptions.InvocationOptions.CniHost, network, pluginLookupOptions);
-        var resultJson = await CniInvoker.InvokeAsync(network, cniInvocationOptions, operation: Constants.Operations.GarbageCollect,
-            pluginBinary!, previousResult: null, cancellationToken);
-        return WrapCniResultWithoutOutput(resultJson);
+        try
+        {
+            await MutativeOperationLock.Semaphore.WaitAsync(cancellationToken);
+            var pluginBinary = SearchForPluginBinary(plugin, runtimeOptions);
+            var resultJson = await InvokeAsync(plugin, runtimeOptions,
+                operation: Constants.Operations.GarbageCollect,
+                pluginBinary!, previousResult: null, cancellationToken);
+            return WrapCniResultWithoutOutput(resultJson);
+        }
+        finally
+        {
+            MutativeOperationLock.Semaphore.Release();
+        }
     }
 
     private static WrappedCniResult<T> WrapCniResultWithOutput<T>(string resultJson) where T : class
@@ -207,18 +243,70 @@ public static class CniRuntime
             : JsonSerializer.Deserialize<ErrorCniResult>(resultJson);
     }
 
-    private static string? LookupPluginBinary(ICniHost cniHost,
-        Network network, PluginLookupOptions? pluginLookupOptions)
+    private static string? SearchForPluginBinary(Plugin plugin, RuntimeOptions runtimeOptions)
     {
-        pluginLookupOptions ??= PluginLookupOptions.Default;
-        var directory = pluginLookupOptions.Directory ??
-                        Environment.GetEnvironmentVariable(pluginLookupOptions.EnvironmentVariable);
+        var directory = runtimeOptions.PluginSearchOptions.ActualDirectory;
         if (directory is null) return null;
 
-        if (!cniHost.DirectoryExists(directory)) return null;
+        if (!runtimeOptions.InvocationOptions.CniHost.DirectoryExists(directory)) return null;
 
-        var matchingFiles = cniHost.EnumerateDirectory(
-            directory, network.Type, pluginLookupOptions.DirectorySearchOption);
+        var matchingFiles = runtimeOptions.InvocationOptions.CniHost.EnumerateDirectory(
+            directory, plugin.Type, runtimeOptions.PluginSearchOptions.DirectorySearchOption);
         return matchingFiles.FirstOrDefault();
+    }
+
+    private static async Task<string> InvokeAsync(
+        Plugin plugin,
+        RuntimeOptions runtimeOptions,
+        string operation,
+        string pluginBinary,
+        AddCniResult? previousResult,
+        CancellationToken cancellationToken)
+    {
+        var stdinJson = DerivePluginInput(plugin, runtimeOptions.CniVersion!,
+            runtimeOptions.ContainerId, previousResult);
+        var inputPath = runtimeOptions.InvocationOptions.CniHost.GetTempFilePath();
+        await runtimeOptions.InvocationOptions.CniHost.WriteFileAsync(inputPath, stdinJson, cancellationToken);
+        
+        var environment = new Dictionary<string, string>
+        {
+            { Constants.Environment.Command, operation },
+            { Constants.Environment.ContainerId, runtimeOptions.ContainerId },
+            { Constants.Environment.InterfaceName, runtimeOptions.InterfaceName },
+            { Constants.Environment.NetworkNamespace, runtimeOptions.NetworkNamespace }
+        };
+        if (runtimeOptions.PluginSearchOptions.ActualDirectory is not null)
+        {
+            environment[Constants.Environment.PluginPath] = runtimeOptions.PluginSearchOptions.ActualDirectory;
+        }
+
+        var process = await runtimeOptions.InvocationOptions.CniHost.StartProcessAsync(
+            $"{pluginBinary} < {inputPath}", environment, runtimeOptions.InvocationOptions, cancellationToken);
+        await process.WaitForExitAsync(cancellationToken);
+        runtimeOptions.InvocationOptions.CniHost.DeleteFile(inputPath);
+        
+        return process.CurrentOutput;
+    }
+    
+    private static string DerivePluginInput(Plugin plugin, string cniVersion, string name,
+        AddCniResult? previousResult)
+    {
+        var jsonNode = plugin.PluginParameters.DeepClone();
+        jsonNode[Constants.Parsing.CniVersion] = cniVersion;
+        jsonNode[Constants.Parsing.Name] = name;
+        jsonNode[Constants.Parsing.Type] = plugin.Type;
+
+        if (plugin.Capabilities is not null)
+        {
+            jsonNode[Constants.Parsing.RuntimeConfig] = plugin.Capabilities;
+        }
+
+        if (previousResult is not null)
+        {
+            jsonNode[Constants.Parsing.PreviousResult] = JsonSerializer
+                .SerializeToNode(previousResult, SerializerOptions)!.AsObject();
+        }
+
+        return JsonSerializer.Serialize(jsonNode, SerializerOptions);
     }
 }

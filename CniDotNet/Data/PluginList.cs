@@ -1,9 +1,9 @@
 namespace CniDotNet.Data;
 
-public sealed record NetworkList(
+public sealed record PluginList(
     string CniVersion,
     string Name,
-    IReadOnlyList<Network> Networks,
+    IReadOnlyList<Plugin> Plugins,
     IEnumerable<string>? CniVersions = null,
     bool DisableCheck = false,
     bool DisableGc = false);

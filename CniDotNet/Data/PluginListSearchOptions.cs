@@ -1,6 +1,6 @@
 namespace CniDotNet.Data;
 
-public sealed record NetworkListLookupOptions(
+public sealed record PluginListSearchOptions(
     string[] FileExtensions,
     string? Directory = null,
     string? SearchQuery = null,

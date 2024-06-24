@@ -10,7 +10,7 @@ public class UnitTest1
     [Fact]
     public async Task Test1()
     {
-        var ptp = new PtpNetwork(
+        var ptp = new PtpPlugin(
             new HostLocalIpam(
                 ResolvConf: "/etc/resolv.conf",
                 Ranges:
@@ -18,40 +18,34 @@ public class UnitTest1
                     [new HostLocalIpamRange(Subnet: "192.168.127.0/24")]
                 ]),
             IpMasq: true);
-        var firewall = new FirewallNetwork();
-        var tcRedirectTap = new TcRedirectTapNetwork();
+        var firewall = new FirewallPlugin();
+        var tcRedirectTap = new TcRedirectTapPlugin();
 
-        var typedNetworkList = new TypedNetworkList(
+        var typedPluginList = new TypedPluginList(
             CniVersion: new Version(1, 0, 0),
             Name: "fcnet",
             [ptp, firewall, tcRedirectTap]);
-        var networkList = typedNetworkList.Build();
-        var serial = NetworkLists.SaveToString(networkList);
+        var pluginList = typedPluginList.Build();
         
-        var invocationOptions = new InvocationOptions(
-            LocalCniHost.Current, "495762");
-        var cniInvocationOptions = CniInvocationOptions.FromNetworkList(
-            networkList,
+        var cniRuntimeOptions = RuntimeOptions.FromNetworkList(
+            pluginList,
             containerId: "fcnet",
             networkNamespace: "/var/run/netns/testing",
-            invocationOptions,
             interfaceName: "eth0",
-            pluginPath: "/home/kanpov/plugins/bin");
-
-        var plo = new PluginLookupOptions("/home/kanpov/plugins/bin");
-        var wrappedResult = await CniRuntime.AddNetworkListAsync(
-            networkList, cniInvocationOptions, pluginLookupOptions: plo);
+            new InvocationOptions(LocalCniHost.Current, "495762"),
+            new PluginSearchOptions(Directory: "/home/kanpov/plugins/bin"));
+        
+        var wrappedResult = await CniRuntime.AddPluginListAsync(pluginList, cniRuntimeOptions);
         var previousResult = wrappedResult.SuccessValue!;
 
-        var checkErrorResult = await CniRuntime.CheckNetworkListAsync(
-            networkList, cniInvocationOptions, previousResult, pluginLookupOptions: plo);
+        var res = await CniRuntime.ProbePluginListVersionsAsync(pluginList, cniRuntimeOptions);
+
+        var checkErrorResult = await CniRuntime.CheckPluginListAsync(pluginList, cniRuntimeOptions, previousResult);
         Assert.Null(checkErrorResult);
 
         for (var i = 0; i < 1; ++i)
         {
-            var deleteErrorResult = await CniRuntime.DeleteNetworkListAsync(
-                networkList, cniInvocationOptions, previousResult,
-                pluginLookupOptions: plo);
+            var deleteErrorResult = await CniRuntime.DeletePluginListAsync(pluginList, cniRuntimeOptions, previousResult);
             Assert.Null(deleteErrorResult);
         }
     }

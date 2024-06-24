@@ -5,13 +5,13 @@ using CniDotNet.Runtime;
 
 namespace CniDotNet.Typing;
 
-public record PtpNetwork(
+public record PtpPlugin(
     object Ipam,
     bool? IpMasq = null,
     int? Mtu = null,
     AddCniResultDns? Dns = null,
     JsonObject? Capabilities = null)
-    : TypedNetwork("ptp", Capabilities)
+    : TypedPlugin("ptp", Capabilities)
 {
     protected override void SerializePluginParameters(JsonObject jsonObject)
     {

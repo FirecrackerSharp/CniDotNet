@@ -1,8 +1,8 @@
 namespace CniDotNet.Runtime;
 
-public sealed class LockHolder(int initialCount)
+public sealed class CniLock
 {
-    internal readonly SemaphoreSlim Semaphore = new(initialCount, maxCount: 1);
+    internal readonly SemaphoreSlim Semaphore = new(initialCount: 1, maxCount: 1);
 
     public bool Unlocked => Semaphore.CurrentCount > 0;
 

@@ -2,13 +2,13 @@ using System.Text.Json.Nodes;
 
 namespace CniDotNet.Typing;
 
-public record FirewallNetwork(
+public record FirewallPlugin(
     FirewallBackend? Backend = null,
     string? IptablesAdminChainName = null,
     string? FirewalldZone = null,
     string? IngressPolicy = null,
     JsonObject? Capabilities = null)
-    : TypedNetwork("firewall", Capabilities)
+    : TypedPlugin("firewall", Capabilities)
 {
     protected override void SerializePluginParameters(JsonObject jsonObject)
     {

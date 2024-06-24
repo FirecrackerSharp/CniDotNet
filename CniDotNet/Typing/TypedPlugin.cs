@@ -3,16 +3,16 @@ using CniDotNet.Data;
 
 namespace CniDotNet.Typing;
 
-public abstract record TypedNetwork(
+public abstract record TypedPlugin(
     string Type,
     JsonObject? Capabilities)
 {
     protected abstract void SerializePluginParameters(JsonObject jsonObject);
 
-    public Network Build()
+    public Plugin Build()
     {
         var jsonObject = new JsonObject();
         SerializePluginParameters(jsonObject);
-        return new Network(Type, Capabilities, jsonObject);
+        return new Plugin(Type, Capabilities, jsonObject);
     }
 }

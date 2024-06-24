@@ -2,18 +2,18 @@ using CniDotNet.Data;
 
 namespace CniDotNet.Typing;
 
-public sealed record TypedNetworkList(
+public sealed record TypedPluginList(
     Version CniVersion,
     string Name,
-    IReadOnlyList<TypedNetwork> Networks,
+    IReadOnlyList<TypedPlugin> Networks,
     IEnumerable<Version>? CniVersions = null,
     bool DisableCheck = false,
     bool DisableGc = false)
 {
-    public NetworkList Build()
+    public PluginList Build()
     {
-        var builtNetworks = Networks.Select(n => n.Build()).ToList();
-        return new NetworkList(
+        var builtNetworks = Networks.Select(p => p.Build()).ToList();
+        return new PluginList(
             CniVersion.ToString(),
             Name,
             builtNetworks,

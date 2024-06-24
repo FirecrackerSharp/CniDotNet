@@ -7,14 +7,14 @@ namespace CniDotNet.Runtime;
 internal static class CniInvoker
 {
     public static async Task<string> InvokeAsync(
-        NetworkPlugin networkPlugin,
+        Network network,
         RuntimeOptions runtimeOptions,
         string operation,
         string pluginBinary,
         AddCniResult? previousResult,
         CancellationToken cancellationToken)
     {
-        var stdinJson = DerivePluginInput(networkPlugin, runtimeOptions.CniVersion!,
+        var stdinJson = DerivePluginInput(network, runtimeOptions.CniVersion!,
             runtimeOptions.ContainerId, previousResult);
         var inputPath = runtimeOptions.CniHost.GetTempFilePath();
         await runtimeOptions.CniHost.WriteFileAsync(inputPath, stdinJson, cancellationToken);
@@ -38,17 +38,17 @@ internal static class CniInvoker
         return process.CurrentOutput;
     }
     
-    private static string DerivePluginInput(NetworkPlugin networkPlugin, string cniVersion, string name,
+    private static string DerivePluginInput(Network network, string cniVersion, string name,
         AddCniResult? previousResult)
     {
-        var jsonNode = networkPlugin.PluginParameters.DeepClone();
+        var jsonNode = network.PluginParameters.DeepClone();
         jsonNode[Constants.Parsing.CniVersion] = cniVersion;
         jsonNode[Constants.Parsing.Name] = name;
-        jsonNode[Constants.Parsing.Type] = networkPlugin.Type;
+        jsonNode[Constants.Parsing.Type] = network.Type;
 
-        if (networkPlugin.Capabilities is not null)
+        if (network.Capabilities is not null)
         {
-            jsonNode[Constants.Parsing.RuntimeConfig] = networkPlugin.Capabilities;
+            jsonNode[Constants.Parsing.RuntimeConfig] = network.Capabilities;
         }
 
         if (previousResult is not null)

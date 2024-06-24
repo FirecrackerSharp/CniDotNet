@@ -9,7 +9,7 @@ public class UnitTest1
     [Fact]
     public async Task Test1()
     {
-        var conf = await NetworkConfigurationLoader.LookupFirstAsync(LocalCniHost.Current,
+        var conf = await NetworkListLoader.LookupFirstAsync(LocalCniHost.Current,
             new ConfigurationLookupOptions([".conflist"], Directory: "/etc/cni/net.d"));
         var runtimeOptions = RuntimeOptions.FromConfiguration(
             conf!,
@@ -21,20 +21,20 @@ public class UnitTest1
             cniHost: LocalCniHost.Current);
 
         var plo = new PluginLookupOptions("/home/kanpov/plugins/bin");
-        var wrappedResult = await CniRuntime.AddConfigurationAsync(
+        var wrappedResult = await CniRuntime.AddNetworkListAsync(
             conf!, runtimeOptions, pluginLookupOptions: plo);
         var previousResult = wrappedResult.SuccessValue!;
 
-        var checkErrorResult = await CniRuntime.CheckConfigurationAsync(
+        var checkErrorResult = await CniRuntime.CheckNetworkListAsync(
             conf!, runtimeOptions, previousResult, pluginLookupOptions: plo);
         Assert.Null(checkErrorResult);
 
-        var gcResult = await CniRuntime.GarbageCollectConfigurationAsync(
+        var gcResult = await CniRuntime.GarbageCollectNetworkListAsync(
             conf!, runtimeOptions, pluginLookupOptions: plo);
         
         for (var i = 0; i < 2; ++i)
         {
-            var deleteErrorResult = await CniRuntime.DeleteConfigurationAsync(
+            var deleteErrorResult = await CniRuntime.DeleteNetworkListAsync(
                 conf!, runtimeOptions, previousResult,
                 pluginLookupOptions: plo);
             Assert.Null(deleteErrorResult);

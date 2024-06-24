@@ -5,16 +5,16 @@ using CniDotNet.Host;
 
 namespace CniDotNet.Runtime;
 
-public static class NetworkConfigurationLoader
+public static class NetworkListLoader
 {
-    public static async Task<NetworkConfiguration?> LookupFirstAsync(
+    public static async Task<NetworkList?> LookupFirstAsync(
         ICniHost cniHost, ConfigurationLookupOptions configurationLookupOptions, CancellationToken cancellationToken = default)
     {
         var matches = await LookupManyAsync(cniHost, configurationLookupOptions, cancellationToken);
         return matches.Count == 0 ? null : matches[0];
     }
     
-    public static async Task<IReadOnlyList<NetworkConfiguration>> LookupManyAsync(
+    public static async Task<IReadOnlyList<NetworkList>> LookupManyAsync(
         ICniHost cniHost, ConfigurationLookupOptions configurationLookupOptions, CancellationToken cancellationToken = default)
     {
         var directory = configurationLookupOptions.Directory ??
@@ -27,7 +27,7 @@ public static class NetworkConfigurationLoader
             .EnumerateDirectory(directory, configurationLookupOptions.SearchQuery ?? "", configurationLookupOptions.DirectorySearchOption)
             .Where(f => configurationLookupOptions.FileExtensions.Contains(Path.GetExtension(f)));
 
-        var configurations = new List<NetworkConfiguration>();
+        var configurations = new List<NetworkList>();
 
         foreach (var file in files)
         {
@@ -46,7 +46,7 @@ public static class NetworkConfigurationLoader
         return configurations;
     }
     
-    public static async Task<NetworkConfiguration> LoadFromFileAsync(
+    public static async Task<NetworkList> LoadFromFileAsync(
         ICniHost cniHost,
         string filePath,
         CancellationToken cancellationToken = default)
@@ -55,7 +55,7 @@ public static class NetworkConfigurationLoader
         return LoadFromString(sourceString);
     }
 
-    public static NetworkConfiguration LoadFromString(string sourceString)
+    public static NetworkList LoadFromString(string sourceString)
     {
         var jsonNode = JsonSerializer.Deserialize<JsonNode>(sourceString)!;
         var configuration = LoadConfiguration(jsonNode);
@@ -63,7 +63,7 @@ public static class NetworkConfigurationLoader
         return configuration;
     }
 
-    private static NetworkConfiguration LoadConfiguration(JsonNode jsonNode)
+    private static NetworkList LoadConfiguration(JsonNode jsonNode)
     {
         var cniVersion = jsonNode[Constants.Parsing.CniVersion]!.GetValue<string>();
 
@@ -91,11 +91,11 @@ public static class NetworkConfigurationLoader
             .Select(pluginJsonNode => LoadPlugin(pluginJsonNode!))
             .ToList();
 
-        return new NetworkConfiguration(
+        return new NetworkList(
             cniVersion, name, plugins, cniVersions, disableCheck, disableGc);
     }
 
-    private static NetworkPlugin LoadPlugin(JsonNode jsonNode)
+    private static Network LoadPlugin(JsonNode jsonNode)
     {
         var type = jsonNode[Constants.Parsing.Type]!.GetValue<string>();
         var capabilities = jsonNode[Constants.Parsing.Capabilities]?.AsObject();
@@ -104,6 +104,6 @@ public static class NetworkConfigurationLoader
         pluginParameters.Remove(Constants.Parsing.Type);
         if (capabilities is not null) pluginParameters.Remove(Constants.Parsing.Capabilities);
 
-        return new NetworkPlugin(type, capabilities, pluginParameters);
+        return new Network(type, capabilities, pluginParameters);
     }
 }

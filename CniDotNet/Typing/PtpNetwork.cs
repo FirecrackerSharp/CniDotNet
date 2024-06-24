@@ -4,31 +4,31 @@ using CniDotNet.Data.Results;
 
 namespace CniDotNet.Typing;
 
-public record PtpTypedNetwork(
+public record PtpNetwork(
     object Ipam,
     bool? IpMasq = null,
     int? Mtu = null,
     AddCniResultDns? Dns = null,
     JsonObject? Capabilities = null)
-    : TypedNetwork(TypedConstants.Ptp, Capabilities)
+    : TypedNetwork("ptp", Capabilities)
 {
     protected override void SerializePluginParameters(JsonObject jsonObject)
     {
         if (IpMasq.HasValue)
         {
-            jsonObject[TypedConstants.IpMasquerade] = IpMasq.Value;
+            jsonObject["ipMasq"] = IpMasq.Value;
         }
 
         if (Mtu.HasValue)
         {
-            jsonObject[TypedConstants.Mtu] = Mtu.Value;
+            jsonObject["mtu"] = Mtu.Value;
         }
 
-        jsonObject[TypedConstants.Ipam] = JsonSerializer.SerializeToNode(Ipam, SerializerOptions);
+        jsonObject["ipam"] = JsonSerializer.SerializeToNode(Ipam, SerializerOptions);
 
         if (Dns is not null)
         {
-            jsonObject[TypedConstants.Dns] = JsonSerializer.SerializeToNode(Dns, SerializerOptions);
+            jsonObject["dns"] = JsonSerializer.SerializeToNode(Dns, SerializerOptions);
         }
     }
 }

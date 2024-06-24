@@ -10,12 +10,27 @@ public class UnitTest1
     [Fact]
     public async Task Test1()
     {
-        var conf = await NetworkLists.LookupFirstAsync(LocalCniHost.Current,
-            new NetworkListLookupOptions([".conflist"], Directory: "/etc/cni/net.d"));
+        var ptp = new PtpNetwork(
+            new HostLocalIpam(
+                ResolvConf: "/etc/resolv.conf",
+                Ranges:
+                [
+                    [new HostLocalIpamRange(Subnet: "192.168.127.0/24")]
+                ]),
+            IpMasq: true);
+        var firewall = new FirewallNetwork();
+        var tcRedirectTap = new TcRedirectTapNetwork();
+
+        var typedNetworkList = new TypedNetworkList(
+            CniVersion: new Version(1, 0, 0),
+            Name: "fcnet",
+            [ptp, firewall, tcRedirectTap]);
+        var networkList = typedNetworkList.Build();
+        
         var invocationOptions = new InvocationOptions(
             LocalCniHost.Current, "495762");
         var cniInvocationOptions = CniInvocationOptions.FromNetworkList(
-            conf!,
+            networkList,
             containerId: "fcnet",
             networkNamespace: "/var/run/netns/testing",
             invocationOptions,
@@ -24,20 +39,17 @@ public class UnitTest1
 
         var plo = new PluginLookupOptions("/home/kanpov/plugins/bin");
         var wrappedResult = await CniRuntime.AddNetworkListAsync(
-            conf!, cniInvocationOptions, pluginLookupOptions: plo);
+            networkList, cniInvocationOptions, pluginLookupOptions: plo);
         var previousResult = wrappedResult.SuccessValue!;
 
         var checkErrorResult = await CniRuntime.CheckNetworkListAsync(
-            conf!, cniInvocationOptions, previousResult, pluginLookupOptions: plo);
+            networkList, cniInvocationOptions, previousResult, pluginLookupOptions: plo);
         Assert.Null(checkErrorResult);
 
-        var gcResult = await CniRuntime.GarbageCollectNetworkListAsync(
-            conf!, cniInvocationOptions, pluginLookupOptions: plo);
-        
-        for (var i = 0; i < 2; ++i)
+        for (var i = 0; i < 1; ++i)
         {
             var deleteErrorResult = await CniRuntime.DeleteNetworkListAsync(
-                conf!, cniInvocationOptions, previousResult,
+                networkList, cniInvocationOptions, previousResult,
                 pluginLookupOptions: plo);
             Assert.Null(deleteErrorResult);
         }
@@ -58,21 +70,5 @@ public class UnitTest1
         
         var newNamespaces = await NetworkNamespaces.GetAllAsync(invocationOptions);
         Console.WriteLine(newNamespaces);
-    }
-
-    [Fact]
-    public void Test3()
-    {
-        var ptpTypedNetwork = new PtpTypedNetwork(
-            new HostLocalIpam(
-                ResolvConf: "/etc/resolv.conf",
-                Ranges:
-                [
-                    new HostLocalIpamRange(Subnet: "192.168.127.0/24")
-                ]),
-            IpMasq: true);
-
-        var ptpNetwork = ptpTypedNetwork.Build();
-        Console.WriteLine(ptpNetwork);
     }
 }

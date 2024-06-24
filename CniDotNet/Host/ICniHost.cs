@@ -1,3 +1,5 @@
+using CniDotNet.Data;
+
 namespace CniDotNet.Host;
 
 public interface ICniHost
@@ -13,5 +15,5 @@ public interface ICniHost
     IEnumerable<string> EnumerateDirectory(string path, string searchPattern, SearchOption searchOption);
 
     Task<ICniHostProcess> StartProcessAsync(string command, Dictionary<string, string> environment,
-        string elevationPassword, string suPath, CancellationToken cancellationToken);
+        InvocationOptions invocationOptions, CancellationToken cancellationToken);
 }

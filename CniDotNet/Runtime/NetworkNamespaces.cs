@@ -10,7 +10,7 @@ public static class NetworkNamespaces
         InvocationOptions invocationOptions,
         CancellationToken cancellationToken = default)
     {
-        var json = await RunAndGetAsync($"ip -j netns list", invocationOptions, cancellationToken);
+        var json = await RunAndGetAsync("ip -j netns list", invocationOptions, cancellationToken);
         if (json is null) return [];
         
         JsonArray jsonArray;
@@ -78,8 +78,7 @@ public static class NetworkNamespaces
         CancellationToken cancellationToken = default)
     {
         var process = await invocationOptions.CniHost.StartProcessAsync(
-            command, new Dictionary<string, string>(),
-            invocationOptions.ElevationPassword!, invocationOptions.SuPath, cancellationToken);
+            command, new Dictionary<string, string>(), invocationOptions, cancellationToken);
         await process.WaitForExitAsync(cancellationToken);
         return string.IsNullOrEmpty(process.CurrentOutput) ? null : process.CurrentOutput;
     }

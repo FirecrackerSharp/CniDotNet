@@ -32,8 +32,7 @@ internal static class CniInvoker
         }
 
         var process = await cniInvocationOptions.InvocationOptions.CniHost.StartProcessAsync(
-            $"{pluginBinary} < {inputPath}", environment, cniInvocationOptions.InvocationOptions.ElevationPassword!,
-            cniInvocationOptions.InvocationOptions.SuPath, cancellationToken);
+            $"{pluginBinary} < {inputPath}", environment, cniInvocationOptions.InvocationOptions, cancellationToken);
         await process.WaitForExitAsync(cancellationToken);
         return process.CurrentOutput;
     }

@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text;
+using CniDotNet.Data;
 
 namespace CniDotNet.Host;
 
@@ -39,23 +40,52 @@ public sealed class LocalCniHost : ICniHost
         return Directory.EnumerateFiles(path, searchPattern, searchOption);
     }
 
-    public bool IsRoot => Environment.UserName == "root";
-
-    public async Task<ICniHostProcess> StartProcessAsync(string command, Dictionary<string, string> environment,
-        string elevationPassword, string suPath, CancellationToken cancellationToken)
+    public Task<ICniHostProcess> StartProcessAsync(string command, Dictionary<string, string> environment,
+        InvocationOptions invocationOptions, CancellationToken cancellationToken)
     {
-        var environmentBuilder = new StringBuilder();
-
-        foreach (var (key, value) in environment)
+        if (Environment.UserName == "root")
         {
-            environmentBuilder.Append($"{key}={value} ");
+            return StartProcessWithoutElevationAsync(command, environment, invocationOptions, cancellationToken);
         }
 
-        var environmentString = environmentBuilder.ToString().TrimEnd();
+        if (invocationOptions.ElevationPassword is null)
+        {
+            throw new ElevationFailureException(
+                "Need to elevate on local host but elevation process is not provided");
+        }
 
+        return StartProcessWithElevationAsync(command, environment, invocationOptions, cancellationToken);
+    }
+
+    private static async Task<ICniHostProcess> StartProcessWithoutElevationAsync(
+        string command, Dictionary<string, string> environment, InvocationOptions invocationOptions, CancellationToken cancellationToken)
+    {
+        var environmentString = BuildEnvironmentString(environment);
         var process = new Process
         {
-            StartInfo = new ProcessStartInfo(suPath)
+            StartInfo = new ProcessStartInfo(invocationOptions.BashPath)
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardInput = true,
+                RedirectStandardError = true
+            }
+        };
+
+        process.Start();
+        var cniHostProcess = new LocalCniHostProcess(process);
+
+        await process.StandardInput.WriteLineAsync(new StringBuilder($"{environmentString} {command} ; exit"), cancellationToken);
+
+        return cniHostProcess;
+    }
+    
+    private static async Task<ICniHostProcess> StartProcessWithElevationAsync(string command, Dictionary<string, string> environment,
+        InvocationOptions invocationOptions, CancellationToken cancellationToken)
+    {
+        var environmentString = BuildEnvironmentString(environment);
+        var process = new Process
+        {
+            StartInfo = new ProcessStartInfo(invocationOptions.SuPath)
             {
                 RedirectStandardOutput = true,
                 RedirectStandardInput = true,
@@ -66,9 +96,21 @@ public sealed class LocalCniHost : ICniHost
         process.Start();
         var cniHostProcess = new LocalCniHostProcess(process);
         
-        await process.StandardInput.WriteLineAsync(new StringBuilder(elevationPassword), cancellationToken);
+        await process.StandardInput.WriteLineAsync(new StringBuilder(invocationOptions.ElevationPassword), cancellationToken);
         await process.StandardInput.WriteLineAsync(new StringBuilder($"{environmentString} {command} ; exit"), cancellationToken);
 
         return cniHostProcess;
+    }
+
+    private static string BuildEnvironmentString(Dictionary<string, string> environment)
+    {
+        var environmentBuilder = new StringBuilder();
+
+        foreach (var (key, value) in environment)
+        {
+            environmentBuilder.Append($"{key}={value} ");
+        }
+
+        return environmentBuilder.ToString().TrimEnd();
     }
 }

@@ -41,7 +41,7 @@ public sealed class LocalCniHost : ICniHost
 
     public bool IsRoot => Environment.UserName == "root";
 
-    public async Task<ICniHostProcess> StartProcessWithElevationAsync(string command, Dictionary<string, string> environment,
+    public async Task<ICniHostProcess> StartProcessAsync(string command, Dictionary<string, string> environment,
         string elevationPassword, string suPath, CancellationToken cancellationToken)
     {
         var environmentBuilder = new StringBuilder();

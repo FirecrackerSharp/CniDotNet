@@ -8,32 +8,32 @@ internal static class CniInvoker
 {
     public static async Task<string> InvokeAsync(
         Network network,
-        RuntimeOptions runtimeOptions,
+        CniInvocationOptions cniInvocationOptions,
         string operation,
         string pluginBinary,
         AddCniResult? previousResult,
         CancellationToken cancellationToken)
     {
-        var stdinJson = DerivePluginInput(network, runtimeOptions.CniVersion!,
-            runtimeOptions.ContainerId, previousResult);
-        var inputPath = runtimeOptions.CniHost.GetTempFilePath();
-        await runtimeOptions.CniHost.WriteFileAsync(inputPath, stdinJson, cancellationToken);
+        var stdinJson = DerivePluginInput(network, cniInvocationOptions.CniVersion!,
+            cniInvocationOptions.ContainerId, previousResult);
+        var inputPath = cniInvocationOptions.InvocationOptions.CniHost.GetTempFilePath();
+        await cniInvocationOptions.InvocationOptions.CniHost.WriteFileAsync(inputPath, stdinJson, cancellationToken);
         
         var environment = new Dictionary<string, string>
         {
             { Constants.Environment.Command, operation },
-            { Constants.Environment.ContainerId, runtimeOptions.ContainerId },
-            { Constants.Environment.InterfaceName, runtimeOptions.InterfaceName },
-            { Constants.Environment.NetworkNamespace, runtimeOptions.NetworkNamespace }
+            { Constants.Environment.ContainerId, cniInvocationOptions.ContainerId },
+            { Constants.Environment.InterfaceName, cniInvocationOptions.InterfaceName },
+            { Constants.Environment.NetworkNamespace, cniInvocationOptions.NetworkNamespace }
         };
-        if (runtimeOptions.PluginPath is not null)
+        if (cniInvocationOptions.PluginPath is not null)
         {
-            environment[Constants.Environment.PluginPath] = runtimeOptions.PluginPath;
+            environment[Constants.Environment.PluginPath] = cniInvocationOptions.PluginPath;
         }
 
-        var process = await runtimeOptions.CniHost.StartProcessWithElevationAsync(
-            $"{pluginBinary} < {inputPath}", environment, runtimeOptions.ElevationPassword!,
-            runtimeOptions.SuPath, cancellationToken);
+        var process = await cniInvocationOptions.InvocationOptions.CniHost.StartProcessAsync(
+            $"{pluginBinary} < {inputPath}", environment, cniInvocationOptions.InvocationOptions.ElevationPassword!,
+            cniInvocationOptions.InvocationOptions.SuPath, cancellationToken);
         await process.WaitForExitAsync(cancellationToken);
         return process.CurrentOutput;
     }

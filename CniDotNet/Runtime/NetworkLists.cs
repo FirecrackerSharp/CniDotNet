@@ -5,27 +5,27 @@ using CniDotNet.Host;
 
 namespace CniDotNet.Runtime;
 
-public static class NetworkListLoader
+public static class NetworkLists
 {
     public static async Task<NetworkList?> LookupFirstAsync(
-        ICniHost cniHost, ConfigurationLookupOptions configurationLookupOptions, CancellationToken cancellationToken = default)
+        ICniHost cniHost, NetworkListLookupOptions networkListLookupOptions, CancellationToken cancellationToken = default)
     {
-        var matches = await LookupManyAsync(cniHost, configurationLookupOptions, cancellationToken);
+        var matches = await LookupManyAsync(cniHost, networkListLookupOptions, cancellationToken);
         return matches.Count == 0 ? null : matches[0];
     }
     
     public static async Task<IReadOnlyList<NetworkList>> LookupManyAsync(
-        ICniHost cniHost, ConfigurationLookupOptions configurationLookupOptions, CancellationToken cancellationToken = default)
+        ICniHost cniHost, NetworkListLookupOptions networkListLookupOptions, CancellationToken cancellationToken = default)
     {
-        var directory = configurationLookupOptions.Directory ??
-                        Environment.GetEnvironmentVariable(configurationLookupOptions.EnvironmentVariable);
+        var directory = networkListLookupOptions.Directory ??
+                        Environment.GetEnvironmentVariable(networkListLookupOptions.EnvironmentVariable);
         if (directory is null) return [];
 
         if (!cniHost.DirectoryExists(directory)) return [];
 
         var files = cniHost
-            .EnumerateDirectory(directory, configurationLookupOptions.SearchQuery ?? "", configurationLookupOptions.DirectorySearchOption)
-            .Where(f => configurationLookupOptions.FileExtensions.Contains(Path.GetExtension(f)));
+            .EnumerateDirectory(directory, networkListLookupOptions.SearchQuery ?? "", networkListLookupOptions.DirectorySearchOption)
+            .Where(f => networkListLookupOptions.FileExtensions.Contains(Path.GetExtension(f)));
 
         var configurations = new List<NetworkList>();
 
@@ -38,7 +38,7 @@ public static class NetworkListLoader
             }
             catch (Exception)
             {
-                if (configurationLookupOptions.ProceedAfterFailure) continue;
+                if (networkListLookupOptions.ProceedAfterFailure) continue;
                 return [];
             }
         }

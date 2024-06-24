@@ -1,6 +1,6 @@
 namespace CniDotNet.Data;
 
-public sealed record ConfigurationLookupOptions(
+public sealed record NetworkListLookupOptions(
     string[] FileExtensions,
     string? Directory = null,
     string? SearchQuery = null,

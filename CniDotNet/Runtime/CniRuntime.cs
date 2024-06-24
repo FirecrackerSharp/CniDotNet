@@ -251,19 +251,19 @@ public static class CniRuntime
         var directory = runtimeOptions.PluginSearchOptions.ActualDirectory;
         if (directory is null)
         {
-            throw new PluginNotFoundException($"Could not find \"{plugin.Type}\" plugin: directory wasn't specified and" +
+            throw new PluginNotFoundException($"Could not find \"{plugin.Type}\" plugin: directory wasn't specified and " +
                                               $"environment variable doesn't exist");
         }
 
         if (!runtimeOptions.InvocationOptions.CniHost.DirectoryExists(directory))
         {
-            throw new PluginNotFoundException($"Could not find \"{plugin.Type}\" plugin: \"{directory}\" directory" +
+            throw new PluginNotFoundException($"Could not find \"{plugin.Type}\" plugin: \"{directory}\" directory " +
                                               $"doesn't exist");
         }
 
         var matchingFiles = runtimeOptions.InvocationOptions.CniHost.EnumerateDirectory(
             directory, plugin.Type, runtimeOptions.PluginSearchOptions.DirectorySearchOption);
-        return matchingFiles.FirstOrDefault() ?? throw new PluginNotFoundException($"Could not find \"{plugin.Type}\"" +
+        return matchingFiles.FirstOrDefault() ?? throw new PluginNotFoundException($"Could not find \"{plugin.Type}\" " +
             $"plugin: the file doesn't exist according to the given search option in the \"{directory}\" directory");
     }
 

@@ -31,7 +31,7 @@ public class UnitTest1
             networkNamespace: "/var/run/netns/testing",
             interfaceName: "eth0",
             new InvocationOptions(LocalCniHost.Current, "495762"),
-            new PluginSearchOptions(Directory: "/home/kanpov/plugins/bin"));
+            new PluginSearchOptions(Directory: "/usr/libexec/cni"));
         
         var wrappedResult = await CniRuntime.AddPluginListAsync(pluginList, cniRuntimeOptions);
         var previousResult = wrappedResult.SuccessValue!;

@@ -1,4 +1,3 @@
-using System.Text;
 using System.Text.Json;
 using CniDotNet.Data;
 using CniDotNet.Data.Results;
@@ -30,18 +29,6 @@ internal static class CniInvoker
         if (runtimeOptions.PluginPath is not null)
         {
             environment[Constants.Environment.PluginPath] = runtimeOptions.PluginPath;
-        }
-
-        if (runtimeOptions.Arguments.Count > 0)
-        {
-            var stringBuilder = new StringBuilder();
-
-            foreach (var (key, value) in runtimeOptions.Arguments)
-            {
-                stringBuilder.Append($"{key}={value};");
-            }
-
-            environment[Constants.Environment.Arguments] = stringBuilder.ToString().TrimEnd(';');
         }
 
         var process = await runtimeOptions.CniHost.StartProcessWithElevationAsync(

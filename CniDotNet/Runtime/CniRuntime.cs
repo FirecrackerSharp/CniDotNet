@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using CniDotNet.Data;
 using CniDotNet.Data.Results;
 using CniDotNet.Host;
@@ -7,6 +8,17 @@ namespace CniDotNet.Runtime;
 
 public static class CniRuntime
 {
+    internal static readonly JsonSerializerOptions SerializerOptions = new()
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
+
+    internal static readonly JsonSerializerOptions PrettyPrintSerializerOptions = new()
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        WriteIndented = true
+    };
+    
     public static async Task<WrappedCniResult<AddCniResult>> AddNetworkListAsync(
         NetworkList networkList,
         CniInvocationOptions cniInvocationOptions,
@@ -15,7 +27,7 @@ public static class CniRuntime
     {
         AddCniResult? previousResult = null;
 
-        foreach (var networkPlugin in networkList.Plugins)
+        foreach (var networkPlugin in networkList.Networks)
         {
             var wrappedResult = await AddNetworkAsync(
                 networkPlugin, cniInvocationOptions, pluginLookupOptions, previousResult, cancellationToken);
@@ -37,9 +49,9 @@ public static class CniRuntime
         PluginLookupOptions? pluginLookupOptions = null,
         CancellationToken cancellationToken = default)
     {
-        for (var i = networkList.Plugins.Count - 1; i >= 0; i--)
+        for (var i = networkList.Networks.Count - 1; i >= 0; i--)
         {
-            var networkPlugin = networkList.Plugins[i];
+            var networkPlugin = networkList.Networks[i];
             var errorCniResult = await DeleteNetworkAsync(
                 networkPlugin, cniInvocationOptions, pluginLookupOptions, previousResult, cancellationToken);
             if (errorCniResult is not null) return errorCniResult;
@@ -57,7 +69,7 @@ public static class CniRuntime
     {
         if (networkList.DisableCheck) return null;
         
-        foreach (var networkPlugin in networkList.Plugins)
+        foreach (var networkPlugin in networkList.Networks)
         {
             var errorCniResult = await CheckNetworkAsync(networkPlugin, cniInvocationOptions, previousResult,
                 pluginLookupOptions, cancellationToken);
@@ -73,7 +85,7 @@ public static class CniRuntime
         PluginLookupOptions? pluginLookupOptions = null,
         CancellationToken cancellationToken = default)
     {
-        foreach (var networkPlugin in networkList.Plugins)
+        foreach (var networkPlugin in networkList.Networks)
         {
             var errorCniResult = await VerifyNetworkReadinessAsync(networkPlugin, cniInvocationOptions, pluginLookupOptions,
                 cancellationToken);
@@ -91,7 +103,7 @@ public static class CniRuntime
     {
         if (networkList.DisableGc) return null;
 
-        foreach (var networkPlugin in networkList.Plugins)
+        foreach (var networkPlugin in networkList.Networks)
         {
             var errorCniResult = await GarbageCollectNetworkAsync(networkPlugin, cniInvocationOptions, pluginLookupOptions,
                 cancellationToken);

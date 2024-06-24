@@ -26,6 +26,7 @@ public class UnitTest1
             Name: "fcnet",
             [ptp, firewall, tcRedirectTap]);
         var networkList = typedNetworkList.Build();
+        var serial = NetworkLists.SaveToString(networkList);
         
         var invocationOptions = new InvocationOptions(
             LocalCniHost.Current, "495762");

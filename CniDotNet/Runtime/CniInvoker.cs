@@ -52,9 +52,10 @@ internal static class CniInvoker
 
         if (previousResult is not null)
         {
-            jsonNode[Constants.Parsing.PreviousResult] = JsonSerializer.SerializeToNode(previousResult)!.AsObject();
+            jsonNode[Constants.Parsing.PreviousResult] = JsonSerializer
+                .SerializeToNode(previousResult, CniRuntime.SerializerOptions)!.AsObject();
         }
 
-        return JsonSerializer.Serialize(jsonNode);
+        return JsonSerializer.Serialize(jsonNode, CniRuntime.SerializerOptions);
     }
 }

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using CniDotNet.Data.Results;
+using CniDotNet.Runtime;
 
 namespace CniDotNet.Typing;
 
@@ -24,11 +25,11 @@ public record PtpNetwork(
             jsonObject["mtu"] = Mtu.Value;
         }
 
-        jsonObject["ipam"] = JsonSerializer.SerializeToNode(Ipam, SerializerOptions);
+        jsonObject["ipam"] = JsonSerializer.SerializeToNode(Ipam, CniRuntime.SerializerOptions);
 
         if (Dns is not null)
         {
-            jsonObject["dns"] = JsonSerializer.SerializeToNode(Dns, SerializerOptions);
+            jsonObject["dns"] = JsonSerializer.SerializeToNode(Dns, CniRuntime.SerializerOptions);
         }
     }
 }

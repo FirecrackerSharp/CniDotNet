@@ -27,14 +27,14 @@ public static class NetworkLists
             .EnumerateDirectory(directory, networkListLookupOptions.SearchQuery ?? "", networkListLookupOptions.DirectorySearchOption)
             .Where(f => networkListLookupOptions.FileExtensions.Contains(Path.GetExtension(f)));
 
-        var configurations = new List<NetworkList>();
+        var networkLists = new List<NetworkList>();
 
         foreach (var file in files)
         {
             try
             {
                 var configuration = await LoadFromFileAsync(cniHost, file, cancellationToken);
-                configurations.Add(configuration);
+                networkLists.Add(configuration);
             }
             catch (Exception)
             {
@@ -43,7 +43,7 @@ public static class NetworkLists
             }
         }
 
-        return configurations;
+        return networkLists;
     }
     
     public static async Task<NetworkList> LoadFromFileAsync(

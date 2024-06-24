@@ -1,6 +1,7 @@
 using CniDotNet.Data;
 using CniDotNet.Host;
 using CniDotNet.Runtime;
+using CniDotNet.Typing;
 
 namespace CniDotNet.Tests;
 
@@ -57,5 +58,21 @@ public class UnitTest1
         
         var newNamespaces = await NetworkNamespaces.GetAllAsync(invocationOptions);
         Console.WriteLine(newNamespaces);
+    }
+
+    [Fact]
+    public void Test3()
+    {
+        var ptpTypedNetwork = new PtpTypedNetwork(
+            new HostLocalIpam(
+                ResolvConf: "/etc/resolv.conf",
+                Ranges:
+                [
+                    new HostLocalIpamRange(Subnet: "192.168.127.0/24")
+                ]),
+            IpMasq: true);
+
+        var ptpNetwork = ptpTypedNetwork.Build();
+        Console.WriteLine(ptpNetwork);
     }
 }

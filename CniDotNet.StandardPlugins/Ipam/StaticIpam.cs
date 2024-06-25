@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
 using CniDotNet.Data.Results;
 
-namespace CniDotNet.Typing.Ipam;
+namespace CniDotNet.StandardPlugins.Ipam;
 
 public sealed record StaticIpam(
     [property: JsonPropertyName("type")] string Type = "static",

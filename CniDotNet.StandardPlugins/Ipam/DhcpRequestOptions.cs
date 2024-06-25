@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace CniDotNet.Typing.Ipam;
+namespace CniDotNet.StandardPlugins.Ipam;
 
 public sealed record DhcpRequestOptions(
     [property: JsonPropertyName("skipDefault")] bool? SkipDefault = null,

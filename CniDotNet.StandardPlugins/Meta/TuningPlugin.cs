@@ -1,8 +1,9 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using CniDotNet.Runtime;
+using CniDotNet.Typing;
 
-namespace CniDotNet.Typing.Meta;
+namespace CniDotNet.StandardPlugins.Meta;
 
 public sealed record TuningPlugin(
     string? DataDir = null,

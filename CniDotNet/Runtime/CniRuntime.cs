@@ -23,7 +23,7 @@ public static partial class CniRuntime
     private static readonly Regex CniRegex = CniRegexGenerator();
     private const int MaximumInterfaceNameLength = 15;
     
-    internal static readonly JsonSerializerOptions SerializerOptions = new()
+    public static readonly JsonSerializerOptions SerializerOptions = new()
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
@@ -266,6 +266,8 @@ public static partial class CniRuntime
     private static void ValidatePluginOptions(PluginOptions pluginOptions, string operation,
         PluginOptionRequirement requirement)
     {
+        if (pluginOptions.SkipValidation) return;
+        
         // path
         if (requirement.HasFlag(PluginOptionRequirement.Path) && !pluginOptions.IncludePath)
         {

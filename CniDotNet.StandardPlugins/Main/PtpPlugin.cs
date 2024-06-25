@@ -2,39 +2,36 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using CniDotNet.Data.Results;
 using CniDotNet.Runtime;
+using CniDotNet.Typing;
 
-namespace CniDotNet.Typing.Main;
+namespace CniDotNet.StandardPlugins.Main;
 
-public sealed record VlanPlugin(
-    string Master,
-    uint VlanId,
+public sealed record PtpPlugin(
     object Ipam,
-    uint? Mtu = null,
+    bool? IpMasquerade = null,
+    int? Mtu = null,
     AddCniResultDns? Dns = null,
-    bool? LinkInContainer = null,
     JsonObject? Capabilities = null,
     JsonObject? Args = null)
-    : TypedPlugin("vlan", Capabilities, Args)
+    : TypedPlugin("ptp", Capabilities, Args)
 {
     protected override void SerializePluginParameters(JsonObject jsonObject)
     {
-        jsonObject["master"] = Master;
-        jsonObject["vlanId"] = VlanId;
-        jsonObject["ipam"] = JsonSerializer.SerializeToNode(Ipam, CniRuntime.SerializerOptions);
+        if (IpMasquerade is not null)
+        {
+            jsonObject["ipMasq"] = IpMasquerade;
+        }
 
         if (Mtu is not null)
         {
             jsonObject["mtu"] = Mtu;
         }
 
+        jsonObject["ipam"] = JsonSerializer.SerializeToNode(Ipam, CniRuntime.SerializerOptions);
+
         if (Dns is not null)
         {
             jsonObject["dns"] = JsonSerializer.SerializeToNode(Dns, CniRuntime.SerializerOptions);
-        }
-
-        if (LinkInContainer is not null)
-        {
-            jsonObject["linkInContainer"] = LinkInContainer;
         }
     }
 }

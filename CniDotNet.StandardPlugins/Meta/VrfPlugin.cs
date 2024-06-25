@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
+using CniDotNet.Typing;
 
-namespace CniDotNet.Typing.Meta;
+namespace CniDotNet.StandardPlugins.Meta;
 
 public record VrfPlugin(
     string VrfName,

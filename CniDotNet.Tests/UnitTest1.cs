@@ -1,11 +1,11 @@
 using CniDotNet.CniHost.Ssh;
 using CniDotNet.Host.Local;
 using CniDotNet.Data;
+using CniDotNet.StandardPlugins.Ipam;
+using CniDotNet.StandardPlugins.Main;
+using CniDotNet.StandardPlugins.Meta;
 using CniDotNet.Runtime;
 using CniDotNet.Typing;
-using CniDotNet.Typing.Ipam;
-using CniDotNet.Typing.Main;
-using CniDotNet.Typing.Meta;
 using Renci.SshNet;
 
 namespace CniDotNet.Tests;

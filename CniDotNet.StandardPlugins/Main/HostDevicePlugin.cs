@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
+using CniDotNet.Typing;
 
-namespace CniDotNet.Typing.Main;
+namespace CniDotNet.StandardPlugins.Main;
 
 public sealed record HostDevicePlugin(
     string? DeviceName = null,

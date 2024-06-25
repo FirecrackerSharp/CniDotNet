@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace CniDotNet.Typing.Main;
+namespace CniDotNet.StandardPlugins.Main;
 
 public sealed record BridgeVlanTrunk(
     [property: JsonPropertyName("minID")] int? MinId = null,

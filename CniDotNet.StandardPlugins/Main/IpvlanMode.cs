@@ -1,4 +1,4 @@
-namespace CniDotNet.Typing.Main;
+namespace CniDotNet.StandardPlugins.Main;
 
 public enum IpvlanMode
 {

@@ -3,11 +3,11 @@ using System.Text.Json.Nodes;
 using CniDotNet.Data.Results;
 using CniDotNet.Runtime;
 
-namespace CniDotNet.Typing;
+namespace CniDotNet.Typing.Main;
 
 public sealed record PtpPlugin(
     object Ipam,
-    bool? IpMasq = null,
+    bool? IpMasquerade = null,
     int? Mtu = null,
     AddCniResultDns? Dns = null,
     JsonObject? Capabilities = null,
@@ -16,9 +16,9 @@ public sealed record PtpPlugin(
 {
     protected override void SerializePluginParameters(JsonObject jsonObject)
     {
-        if (IpMasq is not null)
+        if (IpMasquerade is not null)
         {
-            jsonObject["ipMasq"] = IpMasq;
+            jsonObject["ipMasq"] = IpMasquerade;
         }
 
         if (Mtu is not null)

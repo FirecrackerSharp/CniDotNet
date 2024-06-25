@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
 
-namespace CniDotNet.Typing;
+namespace CniDotNet.Typing.Meta;
 
 public sealed record FirewallPlugin(
     FirewallBackend? Backend = null,

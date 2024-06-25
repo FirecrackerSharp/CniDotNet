@@ -1,4 +1,4 @@
-namespace CniDotNet.Typing;
+namespace CniDotNet.Typing.Meta;
 
 public enum FirewallBackend
 {

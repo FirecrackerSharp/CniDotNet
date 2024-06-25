@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
 
-namespace CniDotNet.Typing;
+namespace CniDotNet.Typing.Main;
 
 public sealed record TapPlugin(
     string? Mac = null,

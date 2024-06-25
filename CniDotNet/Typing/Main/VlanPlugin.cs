@@ -3,7 +3,7 @@ using System.Text.Json.Nodes;
 using CniDotNet.Data.Results;
 using CniDotNet.Runtime;
 
-namespace CniDotNet.Typing;
+namespace CniDotNet.Typing.Main;
 
 public sealed record VlanPlugin(
     string Master,

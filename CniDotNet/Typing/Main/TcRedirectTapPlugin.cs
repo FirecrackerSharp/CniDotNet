@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
 
-namespace CniDotNet.Typing;
+namespace CniDotNet.Typing.Main;
 
 public sealed record TcRedirectTapPlugin(
     JsonObject? Capabilities = null,

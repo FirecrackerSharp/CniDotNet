@@ -1,13 +1,27 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using CniDotNet.Data;
 using CniDotNet.Data.Results;
 
 namespace CniDotNet.Runtime;
 
-public static class CniRuntime
+public static partial class CniRuntime
 {
     public static CniLock MutativeOperationLock { get; } = new();
+
+    public const PluginOptionRequirement AddRequirements = PluginOptionRequirement.ContainerId |
+                                                           PluginOptionRequirement.InterfaceName |
+                                                           PluginOptionRequirement.NetworkNamespace;
+    public const PluginOptionRequirement DeleteRequirements = PluginOptionRequirement.ContainerId |
+                                                              PluginOptionRequirement.InterfaceName;
+    public const PluginOptionRequirement CheckRequirements = AddRequirements;
+    public const PluginOptionRequirement ProbeVersionsRequirements = 0; // none
+    public const PluginOptionRequirement VerifyReadinessRequirements = 0; // none
+    public const PluginOptionRequirement GarbageCollectRequirements = PluginOptionRequirement.Path;
+    
+    private static readonly Regex CniRegex = CniRegexGenerator();
+    private const int MaximumInterfaceNameLength = 15;
     
     internal static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -136,6 +150,7 @@ public static class CniRuntime
         AddCniResult? previousResult = null,
         CancellationToken cancellationToken = default)
     {
+        ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Add, AddRequirements);
         try
         {
             await MutativeOperationLock.Semaphore.WaitAsync(cancellationToken);
@@ -156,6 +171,7 @@ public static class CniRuntime
         AddCniResult? previousResult = null,
         CancellationToken cancellationToken = default)
     {
+        ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Delete, DeleteRequirements);
         try
         {
             await MutativeOperationLock.Semaphore.WaitAsync(cancellationToken);
@@ -176,6 +192,7 @@ public static class CniRuntime
         AddCniResult previousResult,
         CancellationToken cancellationToken = default)
     {
+        ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Check, CheckRequirements);
         var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
         var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Check,
             pluginBinary, previousResult, cancellationToken);
@@ -187,6 +204,7 @@ public static class CniRuntime
         RuntimeOptions runtimeOptions,
         CancellationToken cancellationToken = default)
     {
+        ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Status, VerifyReadinessRequirements);
         var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
         var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Status,
             pluginBinary, previousResult: null, cancellationToken);
@@ -198,6 +216,7 @@ public static class CniRuntime
         RuntimeOptions runtimeOptions,
         CancellationToken cancellationToken = default)
     {
+        ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.ProbeVersions, ProbeVersionsRequirements);
         var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
         var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.ProbeVersions,
             pluginBinary, previousResult: null, cancellationToken);
@@ -209,6 +228,7 @@ public static class CniRuntime
         RuntimeOptions runtimeOptions,
         CancellationToken cancellationToken = default)
     {
+        ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.GarbageCollect, GarbageCollectRequirements);
         try
         {
             await MutativeOperationLock.Semaphore.WaitAsync(cancellationToken);
@@ -243,6 +263,71 @@ public static class CniRuntime
             : JsonSerializer.Deserialize<ErrorCniResult>(resultJson);
     }
 
+    private static void ValidatePluginOptions(PluginOptions pluginOptions, string operation,
+        PluginOptionRequirement requirement)
+    {
+        // path
+        if (requirement.HasFlag(PluginOptionRequirement.Path) && !pluginOptions.IncludePath)
+        {
+            throw new PluginOptionValidationException(
+                $"Path is required for \"{operation}\" but is excluded according to IncludePath=false");
+        }
+        
+        // network namespace
+        if (requirement.HasFlag(PluginOptionRequirement.NetworkNamespace) && string.IsNullOrWhiteSpace(pluginOptions.NetworkNamespace))
+        {
+            throw new PluginOptionValidationException(
+                $"Network namespace is required for \"{operation}\" but isn't provided");
+        }
+        
+        // network name
+        if (string.IsNullOrWhiteSpace(pluginOptions.Name))
+        {
+            throw new PluginOptionValidationException("Network name is required for any operation but is missing");
+        }
+
+        if (!CniRegex.IsMatch(pluginOptions.Name))
+        {
+            throw new PluginOptionValidationException($"Network name \"{pluginOptions.Name}\" doesn't match regex");
+        }
+        
+        // container ID
+        if (requirement.HasFlag(PluginOptionRequirement.ContainerId) && string.IsNullOrWhiteSpace(pluginOptions.ContainerId))
+        {
+            throw new PluginOptionValidationException($"Container ID is required for \"{operation}\" but isn't provided");
+        }
+        
+        if (pluginOptions.ContainerId is not null && !CniRegex.IsMatch(pluginOptions.ContainerId))
+        {
+            throw new PluginOptionValidationException($"Container ID \"{pluginOptions.ContainerId}\" doesn't match regex");
+        }
+        
+        // interface name
+        if (requirement.HasFlag(PluginOptionRequirement.InterfaceName) && string.IsNullOrWhiteSpace(pluginOptions.InterfaceName))
+        {
+            throw new PluginOptionValidationException($"Interface name is required for \"{operation}\" but isn't provided");
+        }
+
+        if (pluginOptions.InterfaceName is null) return;
+
+        if (pluginOptions.InterfaceName.Length > MaximumInterfaceNameLength)
+        {
+            throw new PluginOptionValidationException(
+                $"Interface name \"{pluginOptions.InterfaceName}\" is longer than the maximum of {MaximumInterfaceNameLength}");
+        }
+
+        if (pluginOptions.InterfaceName is "." or "..")
+        {
+            throw new PluginOptionValidationException("Interface name is either . or .., neither of which are allowed");
+        }
+
+        if (pluginOptions.InterfaceName.Any(c => c is '/' or ':' || char.IsWhiteSpace(c)))
+        {
+            throw new PluginOptionValidationException(
+                $"Interface name \"{pluginOptions.InterfaceName}\" contains a forbidden character (/, : or a space)");
+        }
+    }
+
     private static async Task<string> SearchForPluginBinaryAsync(Plugin plugin, RuntimeOptions runtimeOptions,
         CancellationToken cancellationToken)
     {
@@ -252,20 +337,20 @@ public static class CniRuntime
         var directory = runtimeOptions.PluginSearchOptions.ActualDirectory;
         if (directory is null)
         {
-            throw new PluginNotFoundException($"Could not find \"{plugin.Type}\" plugin: directory wasn't specified and " +
+            throw new PluginBinaryNotFoundException($"Could not find \"{plugin.Type}\" plugin: directory wasn't specified and " +
                                               $"environment variable doesn't exist");
         }
 
         if (!runtimeOptions.InvocationOptions.CniHost.DirectoryExists(directory))
         {
-            throw new PluginNotFoundException($"Could not find \"{plugin.Type}\" plugin: \"{directory}\" directory " +
+            throw new PluginBinaryNotFoundException($"Could not find \"{plugin.Type}\" plugin: \"{directory}\" directory " +
                                               $"doesn't exist");
         }
 
         var matchingFiles = await runtimeOptions.InvocationOptions.CniHost.EnumerateDirectoryAsync(
             directory, plugin.Type, runtimeOptions.PluginSearchOptions.DirectorySearchOption,
             cancellationToken);
-        return matchingFiles.FirstOrDefault() ?? throw new PluginNotFoundException($"Could not find \"{plugin.Type}\" " +
+        return matchingFiles.FirstOrDefault() ?? throw new PluginBinaryNotFoundException($"Could not find \"{plugin.Type}\" " +
             $"plugin: the file doesn't exist according to the given search option in the \"{directory}\" directory");
     }
 
@@ -277,19 +362,24 @@ public static class CniRuntime
         AddCniResult? previousResult,
         CancellationToken cancellationToken)
     {
-        var stdinJson = DerivePluginInput(plugin, runtimeOptions.CniVersion!,
-            runtimeOptions.ContainerId, previousResult);
+        var stdinJson = DerivePluginInput(plugin, runtimeOptions, previousResult);
         var inputPath = runtimeOptions.InvocationOptions.CniHost.GetTempFilePath();
         await runtimeOptions.InvocationOptions.CniHost.WriteFileAsync(inputPath, stdinJson, cancellationToken);
         
-        var environment = new Dictionary<string, string>
+        var environment = new Dictionary<string, string> { { Constants.Environment.Command, operation } };
+        if (runtimeOptions.PluginOptions.ContainerId is not null)
         {
-            { Constants.Environment.Command, operation },
-            { Constants.Environment.ContainerId, runtimeOptions.ContainerId },
-            { Constants.Environment.InterfaceName, runtimeOptions.InterfaceName },
-            { Constants.Environment.NetworkNamespace, runtimeOptions.NetworkNamespace }
-        };
-        if (runtimeOptions.PluginSearchOptions.ActualDirectory is not null)
+            environment[Constants.Environment.ContainerId] = runtimeOptions.PluginOptions.ContainerId;
+        }
+        if (runtimeOptions.PluginOptions.InterfaceName is not null)
+        {
+            environment[Constants.Environment.InterfaceName] = runtimeOptions.PluginOptions.InterfaceName;
+        }
+        if (runtimeOptions.PluginOptions.NetworkNamespace is not null)
+        {
+            environment[Constants.Environment.NetworkNamespace] = runtimeOptions.PluginOptions.NetworkNamespace;
+        }
+        if (runtimeOptions.PluginSearchOptions.ActualDirectory is not null && runtimeOptions.PluginOptions.IncludePath)
         {
             environment[Constants.Environment.PluginPath] = runtimeOptions.PluginSearchOptions.ActualDirectory;
         }
@@ -302,12 +392,12 @@ public static class CniRuntime
         return process.CurrentOutput;
     }
     
-    private static string DerivePluginInput(Plugin plugin, string cniVersion, string name,
-        AddCniResult? previousResult)
+    private static string DerivePluginInput(Plugin plugin, RuntimeOptions runtimeOptions, AddCniResult? previousResult)
     {
         var jsonNode = plugin.PluginParameters.DeepClone();
-        jsonNode[Constants.Parsing.CniVersion] = cniVersion;
-        jsonNode[Constants.Parsing.Name] = name;
+        
+        jsonNode[Constants.Parsing.CniVersion] = runtimeOptions.PluginOptions.CniVersion;
+        jsonNode[Constants.Parsing.Name] = runtimeOptions.PluginOptions.Name;
         jsonNode[Constants.Parsing.Type] = plugin.Type;
 
         if (plugin.Capabilities is not null)
@@ -323,4 +413,7 @@ public static class CniRuntime
 
         return JsonSerializer.Serialize(jsonNode, SerializerOptions);
     }
+
+    [GeneratedRegex(@"^[a-zA-Z0-9][a-zA-Z0-9_.\-]*$")]
+    private static partial Regex CniRegexGenerator();
 }

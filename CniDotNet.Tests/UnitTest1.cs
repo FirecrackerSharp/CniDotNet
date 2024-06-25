@@ -28,11 +28,8 @@ public class UnitTest1
 
         using var cniHost = new SshCniHost(new PasswordConnectionInfo("172.20.2.11", 8009, "root", "495762"));
         
-        var cniRuntimeOptions = RuntimeOptions.FromNetworkList(
-            pluginList,
-            containerId: "fcnet",
-            networkNamespace: "/var/run/netns/testing",
-            interfaceName: "eth0",
+        var cniRuntimeOptions = new RuntimeOptions(
+            PluginOptions.FromPluginList(pluginList, "fcnet", "/var/run/netns/testing", "eth0"), 
             new InvocationOptions(cniHost, "495762"),
             new PluginSearchOptions(Directory: "/root/plugins"));
         
@@ -54,17 +51,10 @@ public class UnitTest1
     [Fact]
     public async Task Test2()
     {
-        var invocationOptions = new InvocationOptions(
-            LocalCniHost.Current, "495762");
+        using var cniHost = new SshCniHost(new PasswordConnectionInfo("172.20.2.11", 8009, "root", "495762"));
+        var invocationOptions = new InvocationOptions(cniHost);
         
         var namespaces = await NetworkNamespaces.GetAllAsync(invocationOptions);
         Console.WriteLine(namespaces);
-
-        var error = await NetworkNamespaces.DeleteAsync("m", invocationOptions);
-        error = await NetworkNamespaces.AddAsync(
-            new NetworkNamespace("mynetns", 51), invocationOptions);
-        
-        var newNamespaces = await NetworkNamespaces.GetAllAsync(invocationOptions);
-        Console.WriteLine(newNamespaces);
     }
 }

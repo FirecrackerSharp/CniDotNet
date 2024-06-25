@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace CniDotNet.Typing;
+namespace CniDotNet.Typing.Ipam;
 
 public sealed record HostLocalIpamRange(
     [property: JsonPropertyName("rangeStart")] string? RangeStart = null,

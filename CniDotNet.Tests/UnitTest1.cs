@@ -23,8 +23,7 @@ public class UnitTest1
         var typedPluginList = new TypedPluginList(
             CniVersion: new Version(1, 0, 0),
             Name: "fcnet",
-            [new VlanPlugin("wlp7s0", 5, new HostLocalIpam(
-                [[new HostLocalIpamRange(Subnet: "192.168.127.0/24")]]))]);
+            [new HostDevicePlugin(DeviceName: "tap0")]);
         var pluginList = typedPluginList.Build();
         
         var cniRuntimeOptions = new RuntimeOptions(

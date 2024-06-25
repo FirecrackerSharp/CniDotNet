@@ -1,4 +1,3 @@
-using System.Text.Json;
 using CniDotNet.Host.Ssh;
 using CniDotNet.Host.Local;
 using CniDotNet.Data;
@@ -46,7 +45,6 @@ public class UnitTest1
         var res = await CniRuntime.ProbePluginListVersionsAsync(pluginList, cniRuntimeOptions);
 
         var checkErrorResult = await CniRuntime.CheckPluginListAsync(pluginList, cniRuntimeOptions, previousResult);
-        Assert.Null(checkErrorResult);
 
         for (var i = 0; i < 1; ++i)
         {

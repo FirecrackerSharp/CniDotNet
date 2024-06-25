@@ -30,14 +30,16 @@ public sealed class LocalCniHost : ICniHost
         return await File.ReadAllTextAsync(path, cancellationToken);
     }
 
-    public void DeleteFile(string path)
+    public Task DeleteFileAsync(string path, CancellationToken cancellationToken)
     {
         File.Delete(path);
+        return Task.CompletedTask;
     }
 
-    public IEnumerable<string> EnumerateDirectory(string path, string searchPattern, SearchOption searchOption)
+    public Task<IEnumerable<string>> EnumerateDirectoryAsync(string path, string searchPattern,
+        SearchOption searchOption, CancellationToken cancellationToken)
     {
-        return Directory.EnumerateFiles(path, searchPattern, searchOption);
+        return Task.FromResult(Directory.EnumerateFiles(path, searchPattern, searchOption));
     }
 
     public Task<ICniHostProcess> StartProcessAsync(string command, Dictionary<string, string> environment,
@@ -51,7 +53,7 @@ public sealed class LocalCniHost : ICniHost
         if (invocationOptions.ElevationPassword is null)
         {
             throw new ElevationFailureException(
-                "Need to elevate on local host but elevation process is not provided");
+                "Need to elevate on local host but elevation process hasn't been provided");
         }
 
         return StartProcessWithElevationAsync(command, environment, invocationOptions, cancellationToken);
@@ -60,7 +62,7 @@ public sealed class LocalCniHost : ICniHost
     private static async Task<ICniHostProcess> StartProcessWithoutElevationAsync(
         string command, Dictionary<string, string> environment, InvocationOptions invocationOptions, CancellationToken cancellationToken)
     {
-        var environmentString = BuildEnvironmentString(environment);
+        var environmentString = ICniHost.BuildEnvironmentString(environment);
         var process = new Process
         {
             StartInfo = new ProcessStartInfo(invocationOptions.BashPath)
@@ -82,7 +84,7 @@ public sealed class LocalCniHost : ICniHost
     private static async Task<ICniHostProcess> StartProcessWithElevationAsync(string command, Dictionary<string, string> environment,
         InvocationOptions invocationOptions, CancellationToken cancellationToken)
     {
-        var environmentString = BuildEnvironmentString(environment);
+        var environmentString = ICniHost.BuildEnvironmentString(environment);
         var process = new Process
         {
             StartInfo = new ProcessStartInfo(invocationOptions.SuPath)
@@ -100,17 +102,5 @@ public sealed class LocalCniHost : ICniHost
         await process.StandardInput.WriteLineAsync(new StringBuilder($"{environmentString} {command} ; exit"), cancellationToken);
 
         return cniHostProcess;
-    }
-
-    private static string BuildEnvironmentString(Dictionary<string, string> environment)
-    {
-        var environmentBuilder = new StringBuilder();
-
-        foreach (var (key, value) in environment)
-        {
-            environmentBuilder.Append($"{key}={value} ");
-        }
-
-        return environmentBuilder.ToString().TrimEnd();
     }
 }

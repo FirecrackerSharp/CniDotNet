@@ -23,13 +23,14 @@ public static class PluginLists
 
         if (!cniHost.DirectoryExists(directory)) return [];
 
-        var files = cniHost
-            .EnumerateDirectory(directory, pluginListSearchOptions.SearchQuery ?? "", pluginListSearchOptions.DirectorySearchOption)
-            .Where(f => pluginListSearchOptions.FileExtensions.Contains(Path.GetExtension(f)));
+        var files = await cniHost
+            .EnumerateDirectoryAsync(directory, pluginListSearchOptions.SearchQuery ?? "",
+                pluginListSearchOptions.DirectorySearchOption, cancellationToken);
 
         var pluginLists = new List<PluginList>();
 
-        foreach (var file in files)
+        foreach (var file in files
+                     .Where(f => pluginListSearchOptions.FileExtensions.Contains(Path.GetExtension(f))))
         {
             try
             {

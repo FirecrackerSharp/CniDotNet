@@ -139,7 +139,7 @@ public static class CniRuntime
         try
         {
             await MutativeOperationLock.Semaphore.WaitAsync(cancellationToken);
-            var pluginBinary = SearchForPluginBinary(plugin, runtimeOptions);
+            var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
             var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Add,
                 pluginBinary, previousResult, cancellationToken);
             return WrapCniResultWithOutput<AddCniResult>(resultJson);
@@ -159,7 +159,7 @@ public static class CniRuntime
         try
         {
             await MutativeOperationLock.Semaphore.WaitAsync(cancellationToken);
-            var pluginBinary = SearchForPluginBinary(plugin, runtimeOptions);
+            var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
             var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Delete,
                 pluginBinary, previousResult, cancellationToken);
             return WrapCniResultWithoutOutput(resultJson);
@@ -176,7 +176,7 @@ public static class CniRuntime
         AddCniResult previousResult,
         CancellationToken cancellationToken = default)
     {
-        var pluginBinary = SearchForPluginBinary(plugin, runtimeOptions);
+        var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
         var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Check,
             pluginBinary, previousResult, cancellationToken);
         return WrapCniResultWithoutOutput(resultJson);
@@ -187,7 +187,7 @@ public static class CniRuntime
         RuntimeOptions runtimeOptions,
         CancellationToken cancellationToken = default)
     {
-        var pluginBinary = SearchForPluginBinary(plugin, runtimeOptions);
+        var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
         var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Status,
             pluginBinary, previousResult: null, cancellationToken);
         return WrapCniResultWithoutOutput(resultJson);
@@ -198,7 +198,7 @@ public static class CniRuntime
         RuntimeOptions runtimeOptions,
         CancellationToken cancellationToken = default)
     {
-        var pluginBinary = SearchForPluginBinary(plugin, runtimeOptions);
+        var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
         var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.ProbeVersions,
             pluginBinary, previousResult: null, cancellationToken);
         return WrapCniResultWithOutput<VersionCniResult>(resultJson);
@@ -212,7 +212,7 @@ public static class CniRuntime
         try
         {
             await MutativeOperationLock.Semaphore.WaitAsync(cancellationToken);
-            var pluginBinary = SearchForPluginBinary(plugin, runtimeOptions);
+            var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
             var resultJson = await InvokeAsync(plugin, runtimeOptions,
                 operation: Constants.Operations.GarbageCollect,
                 pluginBinary, previousResult: null, cancellationToken);
@@ -243,7 +243,8 @@ public static class CniRuntime
             : JsonSerializer.Deserialize<ErrorCniResult>(resultJson);
     }
 
-    private static string SearchForPluginBinary(Plugin plugin, RuntimeOptions runtimeOptions)
+    private static async Task<string> SearchForPluginBinaryAsync(Plugin plugin, RuntimeOptions runtimeOptions,
+        CancellationToken cancellationToken)
     {
         var matchFromTable = runtimeOptions.PluginSearchOptions.SearchTable?.GetValueOrDefault(plugin.Type);
         if (matchFromTable is not null) return matchFromTable;
@@ -261,8 +262,9 @@ public static class CniRuntime
                                               $"doesn't exist");
         }
 
-        var matchingFiles = runtimeOptions.InvocationOptions.CniHost.EnumerateDirectory(
-            directory, plugin.Type, runtimeOptions.PluginSearchOptions.DirectorySearchOption);
+        var matchingFiles = await runtimeOptions.InvocationOptions.CniHost.EnumerateDirectoryAsync(
+            directory, plugin.Type, runtimeOptions.PluginSearchOptions.DirectorySearchOption,
+            cancellationToken);
         return matchingFiles.FirstOrDefault() ?? throw new PluginNotFoundException($"Could not find \"{plugin.Type}\" " +
             $"plugin: the file doesn't exist according to the given search option in the \"{directory}\" directory");
     }
@@ -295,7 +297,7 @@ public static class CniRuntime
         var process = await runtimeOptions.InvocationOptions.CniHost.StartProcessAsync(
             $"{pluginBinary} < {inputPath}", environment, runtimeOptions.InvocationOptions, cancellationToken);
         await process.WaitForExitAsync(cancellationToken);
-        runtimeOptions.InvocationOptions.CniHost.DeleteFile(inputPath);
+        await runtimeOptions.InvocationOptions.CniHost.DeleteFileAsync(inputPath, cancellationToken);
         
         return process.CurrentOutput;
     }

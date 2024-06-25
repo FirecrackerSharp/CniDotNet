@@ -1,3 +1,4 @@
+using System.Text;
 using CniDotNet.Data;
 
 namespace CniDotNet.Host;
@@ -12,10 +13,23 @@ public interface ICniHost
 
     Task<string> ReadFileAsync(string path, CancellationToken cancellationToken);
 
-    void DeleteFile(string path);
+    Task DeleteFileAsync(string path, CancellationToken cancellationToken);
 
-    IEnumerable<string> EnumerateDirectory(string path, string searchPattern, SearchOption searchOption);
+    Task<IEnumerable<string>> EnumerateDirectoryAsync(string path, string searchPattern, SearchOption searchOption,
+        CancellationToken cancellationToken);
 
     Task<ICniHostProcess> StartProcessAsync(string command, Dictionary<string, string> environment,
         InvocationOptions invocationOptions, CancellationToken cancellationToken);
+    
+    public static string BuildEnvironmentString(Dictionary<string, string> environment)
+    {
+        var environmentBuilder = new StringBuilder();
+
+        foreach (var (key, value) in environment)
+        {
+            environmentBuilder.Append($"{key}={value} ");
+        }
+
+        return environmentBuilder.ToString().TrimEnd();
+    }
 }

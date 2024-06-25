@@ -1,8 +1,9 @@
+using CniDotNet.CniHost.Ssh;
 using CniDotNet.Host.Local;
 using CniDotNet.Data;
-using CniDotNet.Host;
 using CniDotNet.Runtime;
 using CniDotNet.Typing;
+using Renci.SshNet;
 
 namespace CniDotNet.Tests;
 
@@ -24,14 +25,16 @@ public class UnitTest1
             Name: "fcnet",
             [ptp, firewall, tcRedirectTap]);
         var pluginList = typedPluginList.Build();
+
+        using var cniHost = new SshCniHost(new PasswordConnectionInfo("172.20.2.11", 8009, "root", "495762"));
         
         var cniRuntimeOptions = RuntimeOptions.FromNetworkList(
             pluginList,
             containerId: "fcnet",
             networkNamespace: "/var/run/netns/testing",
             interfaceName: "eth0",
-            new InvocationOptions(LocalCniHost.Current, "495762"),
-            new PluginSearchOptions(Directory: "/usr/libexec/cni"));
+            new InvocationOptions(cniHost, "495762"),
+            new PluginSearchOptions(Directory: "/root/plugins"));
         
         var wrappedResult = await CniRuntime.AddPluginListAsync(pluginList, cniRuntimeOptions);
         var previousResult = wrappedResult.SuccessValue!;

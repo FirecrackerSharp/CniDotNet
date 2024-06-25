@@ -1,4 +1,4 @@
-using CniDotNet.CniHost.Ssh;
+using CniDotNet.Host.Ssh;
 using CniDotNet.Host.Local;
 using CniDotNet.Data;
 using CniDotNet.StandardPlugins.Ipam;

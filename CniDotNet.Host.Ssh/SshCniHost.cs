@@ -3,7 +3,7 @@ using CniDotNet.Data;
 using CniDotNet.Host;
 using Renci.SshNet;
 
-namespace CniDotNet.CniHost.Ssh;
+namespace CniDotNet.Host.Ssh;
 
 public sealed class SshCniHost(ConnectionInfo connectionInfo) : ICniHost, IDisposable
 {

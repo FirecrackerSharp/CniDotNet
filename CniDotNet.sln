@@ -6,7 +6,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CniDotNet.Tests", "CniDotNe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CniDotNet.Host.Local", "CniDotNet.Host.Local\CniDotNet.Host.Local.csproj", "{1A49F2C6-BC13-4C76-A454-3B29A216F5F4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CniDotNet.CniHost.Ssh", "CniDotNet.CniHost.Ssh\CniDotNet.CniHost.Ssh.csproj", "{A54849C1-C6F4-40D7-B2B4-43E0D99B4F64}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CniDotNet.Host.Ssh", "CniDotNet.Host.Ssh\CniDotNet.Host.Ssh.csproj", "{A54849C1-C6F4-40D7-B2B4-43E0D99B4F64}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CniDotNet.StandardPlugins", "CniDotNet.StandardPlugins\CniDotNet.StandardPlugins.csproj", "{0B477CE5-1760-48B4-81B1-3A00DC80A675}"
 EndProject

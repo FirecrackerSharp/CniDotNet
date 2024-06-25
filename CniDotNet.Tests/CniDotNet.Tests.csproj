@@ -21,7 +21,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\CniDotNet.CniHost.Ssh\CniDotNet.CniHost.Ssh.csproj" />
+      <ProjectReference Include="..\CniDotNet.Host.Ssh\CniDotNet.Host.Ssh.csproj" />
       <ProjectReference Include="..\CniDotNet.Host.Local\CniDotNet.Host.Local.csproj" />
       <ProjectReference Include="..\CniDotNet.StandardPlugins\CniDotNet.StandardPlugins.csproj" />
       <ProjectReference Include="..\CniDotNet\CniDotNet.csproj" />

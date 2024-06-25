@@ -1,9 +1,9 @@
 using System.Text.Json.Serialization;
 
-namespace CniDotNet.StandardPlugins.Ipam;
+namespace CniDotNet.Typing;
 
-public sealed record HostLocalIpamRange(
+public sealed record TypedCapabilityIpRange(
+    [property: JsonPropertyName("subnet")] string? Subnet = null,
     [property: JsonPropertyName("rangeStart")] string? RangeStart = null,
     [property: JsonPropertyName("rangeEnd")] string? RangeEnd = null,
-    [property: JsonPropertyName("subnet")] string? Subnet = null,
     [property: JsonPropertyName("gateway")] string? Gateway = null);

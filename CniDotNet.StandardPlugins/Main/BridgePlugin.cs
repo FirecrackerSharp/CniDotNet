@@ -21,8 +21,8 @@ public sealed record BridgePlugin(
     bool? EnableDuplicateAddressDetection = null,
     bool? MacSpoofCheck = null,
     bool? DisableContainerInterface = null,
-    JsonObject? Capabilities = null,
-    JsonObject? Args = null) : TypedPlugin("bridge", Capabilities, Args)
+    TypedCapabilities? Capabilities = null,
+    TypedArgs? Args = null) : TypedPlugin("bridge", Capabilities, Args)
 {
     protected override void SerializePluginParameters(JsonObject jsonObject)
     {

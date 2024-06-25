@@ -6,8 +6,8 @@ namespace CniDotNet.StandardPlugins.Meta;
 public record VrfPlugin(
     string VrfName,
     int? RouteTable = null,
-    JsonObject? Capabilities = null,
-    JsonObject? Args = null) : TypedPlugin("vrf", Capabilities, Args)
+    TypedCapabilities? Capabilities = null,
+    TypedArgs? Args = null) : TypedPlugin("vrf", Capabilities, Args)
 {
     protected override void SerializePluginParameters(JsonObject jsonObject)
     {

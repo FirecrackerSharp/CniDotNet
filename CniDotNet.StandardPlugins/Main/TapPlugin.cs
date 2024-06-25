@@ -11,8 +11,8 @@ public sealed record TapPlugin(
     uint? OwnerUid = null,
     uint? GroupGid = null,
     string? Bridge = null,
-    JsonObject? Capabilities = null,
-    JsonObject? Args = null) : TypedPlugin("tap", Capabilities, Args)
+    TypedCapabilities? Capabilities = null,
+    TypedArgs? Args = null) : TypedPlugin("tap", Capabilities, Args)
 {
     protected override void SerializePluginParameters(JsonObject jsonObject)
     {

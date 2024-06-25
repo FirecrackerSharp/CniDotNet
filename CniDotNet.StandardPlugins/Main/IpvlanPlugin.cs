@@ -11,8 +11,8 @@ public sealed record IpvlanPlugin(
     IpvlanMode Mode = IpvlanMode.L2,
     uint? Mtu = null,
     bool? LinkInContainer = null,
-    JsonObject? Capabilities = null,
-    JsonObject? Args = null) : TypedPlugin("ipvlan", Capabilities, Args)
+    TypedCapabilities? Capabilities = null,
+    TypedArgs? Args = null) : TypedPlugin("ipvlan", Capabilities, Args)
 {
     protected override void SerializePluginParameters(JsonObject jsonObject)
     {

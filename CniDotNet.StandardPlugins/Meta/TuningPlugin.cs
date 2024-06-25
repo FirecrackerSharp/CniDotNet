@@ -13,8 +13,8 @@ public sealed record TuningPlugin(
     bool? PromiscuousMode = null,
     bool? AllMulticastMode = null,
     Dictionary<string, string>? Sysctl = null,
-    JsonObject? Capabilities = null,
-    JsonObject? Args = null) : TypedPlugin("tuning", Capabilities, Args)
+    TypedCapabilities? Capabilities = null,
+    TypedArgs? Args = null) : TypedPlugin("tuning", Capabilities, Args)
 {
     protected override void SerializePluginParameters(JsonObject jsonObject)
     {

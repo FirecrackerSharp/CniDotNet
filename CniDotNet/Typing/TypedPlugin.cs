@@ -5,8 +5,8 @@ namespace CniDotNet.Typing;
 
 public abstract record TypedPlugin(
     string Type,
-    JsonObject? Capabilities,
-    JsonObject? Args)
+    TypedCapabilities? Capabilities,
+    TypedArgs? Args)
 {
     protected abstract void SerializePluginParameters(JsonObject jsonObject);
 
@@ -14,6 +14,6 @@ public abstract record TypedPlugin(
     {
         var jsonObject = new JsonObject();
         SerializePluginParameters(jsonObject);
-        return new Plugin(Type, Capabilities, Args, jsonObject);
+        return new Plugin(Type, Capabilities?.Serialize(), Args?.Serialize(), jsonObject);
     }
 }

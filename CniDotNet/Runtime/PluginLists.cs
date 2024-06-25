@@ -161,16 +161,21 @@ public static class PluginLists
         return jsonObject;
     }
 
-    private static JsonObject SavePlugin(Plugin plugin)
+    private static JsonNode SavePlugin(Plugin plugin)
     {
-        var jsonObject = plugin.PluginParameters;
-        jsonObject[Constants.Parsing.Type] = plugin.Type;
+        var jsonNode = plugin.PluginParameters.DeepClone();
+        jsonNode[Constants.Parsing.Type] = plugin.Type;
 
         if (plugin.Capabilities is not null)
         {
-            jsonObject[Constants.Parsing.Capabilities] = plugin.Capabilities;
+            jsonNode[Constants.Parsing.Capabilities] = plugin.Capabilities;
         }
 
-        return jsonObject;
+        if (plugin.Args is not null)
+        {
+            jsonNode[Constants.Parsing.Args] = plugin.Args;
+        }
+
+        return jsonNode;
     }
 }

@@ -11,8 +11,8 @@ public sealed record PtpPlugin(
     bool? IpMasquerade = null,
     int? Mtu = null,
     AddCniResultDns? Dns = null,
-    JsonObject? Capabilities = null,
-    JsonObject? Args = null)
+    TypedCapabilities? Capabilities = null,
+    TypedArgs? Args = null)
     : TypedPlugin("ptp", Capabilities, Args)
 {
     protected override void SerializePluginParameters(JsonObject jsonObject)

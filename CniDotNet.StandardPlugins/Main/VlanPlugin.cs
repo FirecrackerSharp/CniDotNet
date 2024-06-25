@@ -13,8 +13,8 @@ public sealed record VlanPlugin(
     uint? Mtu = null,
     AddCniResultDns? Dns = null,
     bool? LinkInContainer = null,
-    JsonObject? Capabilities = null,
-    JsonObject? Args = null)
+    TypedCapabilities? Capabilities = null,
+    TypedArgs? Args = null)
     : TypedPlugin("vlan", Capabilities, Args)
 {
     protected override void SerializePluginParameters(JsonObject jsonObject)

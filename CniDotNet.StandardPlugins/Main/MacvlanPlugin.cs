@@ -11,8 +11,8 @@ public sealed record MacvlanPlugin(
     MacvlanMode Mode = MacvlanMode.Bridge,
     uint? Mtu = null,
     bool? LinkInContainer = null,
-    JsonObject? Capabilities = null,
-    JsonObject? Args = null) : TypedPlugin("macvlan", Capabilities, Args)
+    TypedCapabilities? Capabilities = null,
+    TypedArgs? Args = null) : TypedPlugin("macvlan", Capabilities, Args)
 {
     protected override void SerializePluginParameters(JsonObject jsonObject)
     {

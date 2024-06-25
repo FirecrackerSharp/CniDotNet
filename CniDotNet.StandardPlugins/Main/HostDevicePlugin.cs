@@ -8,8 +8,8 @@ public sealed record HostDevicePlugin(
     string? DeviceMac = null,
     string? DeviceKernelObject = null,
     string? DevicePciBusId = null,
-    JsonObject? Args = null,
-    JsonObject? Capabilities = null) : TypedPlugin("host-device", Args, Capabilities)
+    TypedCapabilities? Capabilities = null,
+    TypedArgs? Args = null) : TypedPlugin("host-device", Capabilities, Args)
 {
     protected override void SerializePluginParameters(JsonObject jsonObject)
     {

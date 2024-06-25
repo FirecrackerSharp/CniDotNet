@@ -1,3 +1,4 @@
+using System.Text.Json;
 using CniDotNet.Host.Ssh;
 using CniDotNet.Host.Local;
 using CniDotNet.Data;
@@ -18,8 +19,11 @@ public class UnitTest1
         var ptp = new PtpPlugin(
             new HostLocalIpam(
                 ResolvConf: "/etc/resolv.conf",
-                Ranges: [[new HostLocalIpamRange(Subnet: "192.168.127.0/24")]]),
-            IpMasquerade: true);
+                Ranges: [[new TypedCapabilityIpRange(Subnet: "192.168.127.0/24")]]),
+            IpMasquerade: true,
+            Capabilities: new TypedCapabilities(
+                PortMappings: [new TypedCapabilityPortMapping(1000, 2000)]),
+            Args: new TypedArgs([new TypedArgLabel("key", "value")]));
         var firewall = new FirewallPlugin();
         var tcRedirectTap = new TcRedirectTapPlugin();
         var bandwidth = new BandwidthPlugin(123, 456, 123, 456);

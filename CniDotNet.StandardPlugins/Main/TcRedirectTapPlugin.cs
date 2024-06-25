@@ -4,8 +4,8 @@ using CniDotNet.Typing;
 namespace CniDotNet.StandardPlugins.Main;
 
 public sealed record TcRedirectTapPlugin(
-    JsonObject? Capabilities = null,
-    JsonObject? Args = null) : TypedPlugin("tc-redirect-tap", Capabilities, Args)
+    TypedCapabilities? Capabilities = null,
+    TypedArgs? Args = null) : TypedPlugin("tc-redirect-tap", Capabilities, Args)
 {
     protected override void SerializePluginParameters(JsonObject jsonObject) {}
 }

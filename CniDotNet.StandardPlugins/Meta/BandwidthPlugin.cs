@@ -8,8 +8,8 @@ public sealed record BandwidthPlugin(
     uint IngressBurst,
     uint EgressRate,
     uint EgressBurst,
-    JsonObject? Capabilities = null,
-    JsonObject? Args = null) : TypedPlugin("bandwidth", Capabilities, Args)
+    TypedCapabilities? Capabilities = null,
+    TypedArgs? Args = null) : TypedPlugin("bandwidth", Capabilities, Args)
 {
     protected override void SerializePluginParameters(JsonObject jsonObject)
     {

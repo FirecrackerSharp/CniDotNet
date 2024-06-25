@@ -25,12 +25,14 @@ public static partial class CniRuntime
     
     public static readonly JsonSerializerOptions SerializerOptions = new()
     {
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        Converters = { new JsonStringEnumConverterWithAttributeSupport() }
     };
 
     internal static readonly JsonSerializerOptions PrettyPrintSerializerOptions = new()
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        Converters = { new JsonStringEnumConverterWithAttributeSupport() },
         WriteIndented = true
     };
     
@@ -404,12 +406,12 @@ public static partial class CniRuntime
 
         if (plugin.Capabilities is not null)
         {
-            jsonNode[Constants.Parsing.RuntimeConfig] = plugin.Capabilities;
+            jsonNode[Constants.Parsing.RuntimeConfig] = plugin.Capabilities.DeepClone();
         }
 
         if (plugin.Args is not null)
         {
-            jsonNode[Constants.Parsing.Args] = plugin.Args;
+            jsonNode[Constants.Parsing.Args] = plugin.Args.DeepClone();
         }
 
         if (previousResult is not null)

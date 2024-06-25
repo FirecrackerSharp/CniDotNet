@@ -7,8 +7,9 @@ public sealed record FirewallPlugin(
     string? IptablesAdminChainName = null,
     string? FirewalldZone = null,
     string? IngressPolicy = null,
-    JsonObject? Capabilities = null)
-    : TypedPlugin("firewall", Capabilities)
+    JsonObject? Capabilities = null,
+    JsonObject? Args = null)
+    : TypedPlugin("firewall", Capabilities, Args)
 {
     protected override void SerializePluginParameters(JsonObject jsonObject)
     {

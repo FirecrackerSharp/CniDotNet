@@ -5,4 +5,5 @@ namespace CniDotNet.Data;
 public sealed record Plugin(
     string Type,
     JsonObject? Capabilities,
+    JsonObject? Args,
     JsonObject PluginParameters);

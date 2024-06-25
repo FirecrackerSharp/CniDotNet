@@ -405,6 +405,11 @@ public static partial class CniRuntime
             jsonNode[Constants.Parsing.RuntimeConfig] = plugin.Capabilities;
         }
 
+        if (plugin.Args is not null)
+        {
+            jsonNode[Constants.Parsing.Args] = plugin.Args;
+        }
+
         if (previousResult is not null)
         {
             jsonNode[Constants.Parsing.PreviousResult] = JsonSerializer

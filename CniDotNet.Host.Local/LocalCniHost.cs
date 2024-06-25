@@ -6,7 +6,7 @@ namespace CniDotNet.Host.Local;
 
 public sealed class LocalCniHost : ICniHost
 {
-    public static LocalCniHost Current { get; } = new();
+    public static LocalCniHost Instance { get; } = new();
     
     private LocalCniHost() {}
 

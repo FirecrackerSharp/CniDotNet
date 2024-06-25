@@ -112,12 +112,13 @@ public static class PluginLists
     {
         var type = jsonNode[Constants.Parsing.Type]!.GetValue<string>();
         var capabilities = jsonNode[Constants.Parsing.Capabilities]?.AsObject();
+        var args = jsonNode[Constants.Parsing.Args]?.AsObject();
 
         var pluginParameters = jsonNode.AsObject();
         pluginParameters.Remove(Constants.Parsing.Type);
         if (capabilities is not null) pluginParameters.Remove(Constants.Parsing.Capabilities);
 
-        return new Plugin(type, capabilities, pluginParameters);
+        return new Plugin(type, capabilities, args, pluginParameters);
     }
 
     private static JsonObject SavePluginList(PluginList pluginList)

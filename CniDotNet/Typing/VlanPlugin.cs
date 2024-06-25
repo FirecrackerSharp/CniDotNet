@@ -5,32 +5,36 @@ using CniDotNet.Runtime;
 
 namespace CniDotNet.Typing;
 
-public sealed record PtpPlugin(
+public sealed record VlanPlugin(
+    string Master,
+    uint VlanId,
     object Ipam,
-    bool? IpMasq = null,
-    int? Mtu = null,
+    uint? Mtu = null,
     AddCniResultDns? Dns = null,
+    bool? LinkInContainer = null,
     JsonObject? Capabilities = null,
     JsonObject? Args = null)
-    : TypedPlugin("ptp", Capabilities, Args)
+    : TypedPlugin("vlan", Capabilities, Args)
 {
     protected override void SerializePluginParameters(JsonObject jsonObject)
     {
-        if (IpMasq is not null)
-        {
-            jsonObject["ipMasq"] = IpMasq;
-        }
+        jsonObject["master"] = Master;
+        jsonObject["vlanId"] = VlanId;
+        jsonObject["ipam"] = JsonSerializer.SerializeToNode(Ipam, CniRuntime.SerializerOptions);
 
         if (Mtu is not null)
         {
             jsonObject["mtu"] = Mtu;
         }
 
-        jsonObject["ipam"] = JsonSerializer.SerializeToNode(Ipam, CniRuntime.SerializerOptions);
-
         if (Dns is not null)
         {
             jsonObject["dns"] = JsonSerializer.SerializeToNode(Dns, CniRuntime.SerializerOptions);
+        }
+
+        if (LinkInContainer is not null)
+        {
+            jsonObject["linkInContainer"] = LinkInContainer;
         }
     }
 }

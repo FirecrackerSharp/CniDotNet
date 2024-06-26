@@ -8,4 +8,4 @@ public sealed record AddCniResultInterface(
     [property: JsonPropertyName("mtu")] uint? Mtu = null,
     [property: JsonPropertyName("sandbox")] string? Sandbox = null,
     [property: JsonPropertyName("socketPath")] string? SocketPath = null,
-    [property: JsonPropertyName("pciID")] string? PciID = null);
+    [property: JsonPropertyName("pciID")] string? PciId = null);

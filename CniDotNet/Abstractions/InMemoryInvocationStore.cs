@@ -9,7 +9,7 @@ public sealed class InMemoryInvocationStore : IInvocationStore
     public static readonly InMemoryInvocationStore Instance = new();
     
     private readonly Dictionary<string, string> _binaryLocationEntries = new();
-    private readonly HashSet<StoredAttachment> _attachmentEntries = [];
+    private readonly HashSet<Attachment> _attachmentEntries = [];
     private readonly Dictionary<PluginList, AddCniResult> _resultEntries = new();
     
     private InMemoryInvocationStore() {}
@@ -26,9 +26,9 @@ public sealed class InMemoryInvocationStore : IInvocationStore
             _binaryLocationEntries.FirstOrDefault(x => x.Key == pluginType).Value);
     }
 
-    public Task AddAttachmentAsync(StoredAttachment storedAttachment)
+    public Task AddAttachmentAsync(Attachment attachment)
     {
-        _attachmentEntries.Add(storedAttachment);
+        _attachmentEntries.Add(attachment);
         return Task.CompletedTask;
     }
 
@@ -38,22 +38,22 @@ public sealed class InMemoryInvocationStore : IInvocationStore
         return Task.CompletedTask;
     }
 
-    public Task<StoredAttachment?> GetAttachmentAsync(Plugin plugin, PluginOptions pluginOptions)
+    public Task<Attachment?> GetAttachmentAsync(Plugin plugin, PluginOptions pluginOptions)
     {
         return Task.FromResult(
             _attachmentEntries.FirstOrDefault(a => a.Plugin == plugin && a.PluginOptions == pluginOptions));
     }
 
-    public Task<IEnumerable<StoredAttachment>> GetAllAttachmentsForPluginAsync(Plugin plugin)
+    public Task<IReadOnlyList<Attachment>> GetAllAttachmentsForPluginAsync(Plugin plugin)
     {
-        return Task.FromResult(
-            _attachmentEntries.Where(a => a.Plugin == plugin));
+        return Task.FromResult<IReadOnlyList<Attachment>>(
+            _attachmentEntries.Where(a => a.Plugin == plugin).ToList());
     }
 
-    public Task<IEnumerable<StoredAttachment>> GetAllAttachmentsForPluginListAsync(PluginList pluginList)
+    public Task<IReadOnlyList<Attachment>> GetAllAttachmentsForPluginListAsync(PluginList pluginList)
     {
-        return Task.FromResult(
-            _attachmentEntries.Where(a => a.ParentPluginList == pluginList));
+        return Task.FromResult<IReadOnlyList<Attachment>>(
+            _attachmentEntries.Where(a => a.ParentPluginList == pluginList).ToList());
     }
 
     public Task SetResultAsync(PluginList pluginList, AddCniResult result)

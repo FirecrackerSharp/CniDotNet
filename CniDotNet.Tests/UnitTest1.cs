@@ -37,25 +37,18 @@ public class UnitTest1
         var pluginList = typedPluginList.Build();
         var serial = PluginLists.SaveToString(pluginList);
         
-        var cniRuntimeOptions = new RuntimeOptions(
+        var runtimeOptions = new RuntimeOptions(
             PluginOptions.FromPluginList(pluginList, "fcnet", "/var/run/netns/testing", "eth0",
                 extraCapabilities: new JsonObject { ["q"] = "a" }), 
             new InvocationOptions(LocalRuntimeHost.Instance, "495762"),
             new PluginSearchOptions(Directory: "/usr/libexec/cni"),
             new InvocationStoreOptions(InMemoryInvocationStore.Instance));
         
-        var wrappedResult = await CniRuntime.AddPluginListAsync(pluginList, cniRuntimeOptions);
-        var previousResult = wrappedResult.SuccessValue!;
+        var wrappedResult = await CniRuntime.AddPluginListAsync(pluginList, runtimeOptions);
 
-        var res = await CniRuntime.ProbePluginListVersionsAsync(pluginList, cniRuntimeOptions);
-
-        var checkErrorResult = await CniRuntime.CheckPluginListAsync(pluginList, cniRuntimeOptions, previousResult);
-
-        for (var i = 0; i < 1; ++i)
-        {
-            var deleteErrorResult = await CniRuntime.DeletePluginListAsync(pluginList, cniRuntimeOptions, previousResult);
-            Assert.Null(deleteErrorResult);
-        }
+        await CniRuntime.GarbageCollectPluginListWithStoreAsync(pluginList, runtimeOptions);
+        var errorResult = await CniRuntime.DeletePluginListWithStoreAsync(pluginList, runtimeOptions);
+        Assert.Null(errorResult);
     }
 
     [Fact]

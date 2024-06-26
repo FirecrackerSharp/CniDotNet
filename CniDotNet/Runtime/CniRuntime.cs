@@ -41,6 +41,7 @@ public static partial class CniRuntime
         RuntimeOptions runtimeOptions,
         CancellationToken cancellationToken = default)
     {
+        ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Add, AddRequirements);
         AddCniResult? previousResult = null;
 
         foreach (var plugin in pluginList.Plugins)
@@ -69,15 +70,38 @@ public static partial class CniRuntime
         AddCniResult previousResult,
         CancellationToken cancellationToken = default)
     {
+        ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Delete, DeleteRequirements);
+        
         for (var i = pluginList.Plugins.Count - 1; i >= 0; i--)
         {
             var plugin = pluginList.Plugins[i];
             var errorCniResult = await DeletePluginAsync(
-                plugin, runtimeOptions, previousResult, cancellationToken);
+                plugin, runtimeOptions, previousResult, pluginList, cancellationToken);
             if (errorCniResult is not null) return errorCniResult;
         }
 
         return null;
+    }
+
+    public static async Task<ErrorCniResult?> DeletePluginListWithStoreAsync(
+        PluginList pluginList,
+        RuntimeOptions runtimeOptions,
+        CancellationToken cancellationToken = default)
+    {
+        if (runtimeOptions.InvocationStoreOptions is not { StoreResults: true })
+        {
+            throw new ItemNotRetrievedFromStoreException(
+                "Store hasn't been configured for storing results, and yet a result is being requested");
+        }
+
+        var previousResult = await runtimeOptions.InvocationStoreOptions.InvocationStore.GetResultAsync(pluginList);
+        if (previousResult is null)
+        {
+            throw new ItemNotRetrievedFromStoreException(
+                $"No result has been stored for given plugin list (hash code {pluginList.GetHashCode()}");
+        }
+
+        return await DeletePluginListAsync(pluginList, runtimeOptions, previousResult, cancellationToken);
     }
 
     public static async Task<ErrorCniResult?> CheckPluginListAsync(
@@ -87,10 +111,11 @@ public static partial class CniRuntime
         CancellationToken cancellationToken = default)
     {
         if (pluginList.DisableCheck) return null;
+        ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Check, CheckRequirements);
         
         foreach (var plugin in pluginList.Plugins)
         {
-            var errorCniResult = await CheckPluginAsync(plugin, runtimeOptions, previousResult, cancellationToken);
+            var errorCniResult = await CheckPluginAsync(plugin, runtimeOptions, previousResult, pluginList, cancellationToken);
             if (errorCniResult is not null) return errorCniResult;
         }
 
@@ -102,57 +127,77 @@ public static partial class CniRuntime
         RuntimeOptions runtimeOptions,
         CancellationToken cancellationToken = default)
     {
+        ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.VerifyReadiness, VerifyReadinessRequirements);
+        
         foreach (var plugin in pluginList.Plugins)
         {
-            var errorCniResult = await VerifyPluginReadinessAsync(plugin, runtimeOptions, cancellationToken);
+            var errorCniResult = await VerifyPluginReadinessAsync(plugin, runtimeOptions, pluginList, cancellationToken);
             if (errorCniResult is not null) return errorCniResult;
         }
 
         return null;
     }
 
-    public static async Task<WrappedCniResult<IReadOnlyDictionary<Plugin, VersionCniResult>>> ProbePluginListVersionsAsync(
+    public static async Task<ErrorCniResult?> GarbageCollectPluginListAsync(
+        PluginList pluginList,
+        RuntimeOptions runtimeOptions,
+        IReadOnlyList<Attachment> gcAttachments,
+        CancellationToken cancellationToken = default)
+    {
+        ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.GarbageCollect, GarbageCollectRequirements);
+
+        foreach (var plugin in pluginList.Plugins)
+        {
+            var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
+            var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.GarbageCollect,
+                pluginBinary, previousResult: null, gcAttachments, cancellationToken);
+            var errorCniResult = WrapPotentialErrorCniResult(resultJson);
+
+            if (errorCniResult is not null) return errorCniResult;
+        }
+
+        return null;
+    }
+
+    public static async Task<ErrorCniResult?> GarbageCollectPluginListWithStoreAsync(
         PluginList pluginList,
         RuntimeOptions runtimeOptions,
         CancellationToken cancellationToken = default)
     {
-        var results = new Dictionary<Plugin, VersionCniResult>();
-
-        foreach (var plugin in pluginList.Plugins)
+        if (runtimeOptions.InvocationStoreOptions is not { StoreAttachments: true })
         {
-            var wrappedResult = await ProbePluginVersionsAsync(plugin, runtimeOptions, cancellationToken);
-
-            if (wrappedResult.IsSuccess)
-            {
-                results[plugin] = wrappedResult.SuccessValue!;
-            }
-            else
-            {
-                return WrappedCniResult<IReadOnlyDictionary<Plugin, VersionCniResult>>.Error(wrappedResult.ErrorValue!);
-            }
+            throw new ItemNotRetrievedFromStoreException("Store hasn't been configured for storing attachments, yet an attachment is needed");
         }
-        
-        return WrappedCniResult<IReadOnlyDictionary<Plugin, VersionCniResult>>.Success(results);
+
+        var gcAttachments =
+            await runtimeOptions.InvocationStoreOptions.InvocationStore.GetAllAttachmentsForPluginListAsync(pluginList);
+        return await GarbageCollectPluginListAsync(pluginList, runtimeOptions, gcAttachments, cancellationToken);
     }
 
     public static async Task<WrappedCniResult<AddCniResult>> AddPluginAsync(
         Plugin plugin,
         RuntimeOptions runtimeOptions,
         AddCniResult? previousResult = null,
-        PluginList? parentPluginList = null,
+        PluginList? pluginList = null,
         CancellationToken cancellationToken = default)
     {
-        ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Add, AddRequirements);
+        if (pluginList is null)
+        {
+            ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Add, AddRequirements);
+        }
+
         var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
         var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Add,
-            pluginBinary, previousResult, cancellationToken);
+            pluginBinary, previousResult, gcAttachments: null, cancellationToken);
 
         var wrappedResult = WrapCniResult<AddCniResult>(resultJson);
+        if (wrappedResult.IsError) return wrappedResult;
         
-        if (wrappedResult.IsSuccess && runtimeOptions.InvocationStoreOptions is { StoreAttachments: true })
+        var attachment = new Attachment(runtimeOptions.PluginOptions, plugin, pluginList);
+        wrappedResult.Attachment = attachment;
+        if (runtimeOptions.InvocationStoreOptions is { StoreAttachments: true })
         {
-            await runtimeOptions.InvocationStoreOptions.InvocationStore.AddAttachmentAsync(new StoredAttachment(
-                runtimeOptions.PluginOptions, plugin, parentPluginList));
+            await runtimeOptions.InvocationStoreOptions.InvocationStore.AddAttachmentAsync(attachment);
         }
         
         return wrappedResult;
@@ -162,15 +207,21 @@ public static partial class CniRuntime
         Plugin plugin,
         RuntimeOptions runtimeOptions,
         AddCniResult? previousResult = null,
+        PluginList? pluginList = null,
         CancellationToken cancellationToken = default)
     {
-        ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Delete, DeleteRequirements);
+        if (pluginList is null)
+        {
+            ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Delete, DeleteRequirements);
+        }
+
         var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
         var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Delete,
-            pluginBinary, previousResult, cancellationToken);
+            pluginBinary, previousResult, gcAttachments: null, cancellationToken);
         
         var errorResult = WrapPotentialErrorCniResult(resultJson);
 
+        // if deleted successfully, remove stored attachment
         if (errorResult is null && runtimeOptions.InvocationStoreOptions is { StoreAttachments: true })
         {
             await runtimeOptions.InvocationStoreOptions.InvocationStore.RemoveAttachmentAsync(
@@ -184,36 +235,63 @@ public static partial class CniRuntime
         Plugin plugin,
         RuntimeOptions runtimeOptions,
         AddCniResult previousResult,
+        PluginList? pluginList = null,
         CancellationToken cancellationToken = default)
     {
-        ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Check, CheckRequirements);
+        if (pluginList is null)
+        {
+            ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Check, CheckRequirements);
+        }
+
         var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
         var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Check,
-            pluginBinary, previousResult, cancellationToken);
-        return WrapPotentialErrorCniResult(resultJson);
+            pluginBinary, previousResult, gcAttachments: null, cancellationToken);
+        
+        var errorResult =  WrapPotentialErrorCniResult(resultJson);
+        
+        // if check gives some error, remove stored attachment
+        if (errorResult is not null && runtimeOptions.InvocationStoreOptions is { StoreAttachments: true })
+        {
+            await runtimeOptions.InvocationStoreOptions.InvocationStore.RemoveAttachmentAsync(
+                plugin, runtimeOptions.PluginOptions);
+        }
+
+        return errorResult;
     }
 
     public static async Task<ErrorCniResult?> VerifyPluginReadinessAsync(
         Plugin plugin,
         RuntimeOptions runtimeOptions,
+        PluginList? pluginList = null,
         CancellationToken cancellationToken = default)
     {
-        ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Status, VerifyReadinessRequirements);
+        if (pluginList is null)
+        {
+            ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.VerifyReadiness,
+                VerifyReadinessRequirements);
+        }
+
         var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
-        var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Status,
-            pluginBinary, previousResult: null, cancellationToken);
+        var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.VerifyReadiness,
+            pluginBinary, previousResult: null, gcAttachments: null, cancellationToken);
         return WrapPotentialErrorCniResult(resultJson);
     }
     
     public static async Task<WrappedCniResult<VersionCniResult>> ProbePluginVersionsAsync(
         Plugin plugin,
         RuntimeOptions runtimeOptions,
+        PluginList? pluginList = null,
         CancellationToken cancellationToken = default)
     {
-        ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.ProbeVersions, ProbeVersionsRequirements);
+        if (pluginList is null)
+        {
+            ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.ProbeVersions,
+                ProbeVersionsRequirements);
+        }
+
         var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
         var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.ProbeVersions,
-            pluginBinary, previousResult: null, cancellationToken);
+            pluginBinary, previousResult: null, gcAttachments: null, cancellationToken);
         return WrapCniResult<VersionCniResult>(resultJson);
     }
 
@@ -356,9 +434,10 @@ public static partial class CniRuntime
         string operation,
         string pluginBinary,
         AddCniResult? previousResult,
+        IReadOnlyList<Attachment>? gcAttachments,
         CancellationToken cancellationToken)
     {
-        var stdinJson = DerivePluginInput(plugin, runtimeOptions, previousResult);
+        var stdinJson = DerivePluginInput(plugin, runtimeOptions, previousResult, gcAttachments);
         var inputPath = runtimeOptions.InvocationOptions.RuntimeHost.GetTempFilePath();
         await runtimeOptions.InvocationOptions.RuntimeHost.WriteFileAsync(inputPath, stdinJson, cancellationToken);
         
@@ -388,7 +467,8 @@ public static partial class CniRuntime
         return process.CurrentOutput;
     }
     
-    private static string DerivePluginInput(Plugin plugin, RuntimeOptions runtimeOptions, AddCniResult? previousResult)
+    private static string DerivePluginInput(Plugin plugin, RuntimeOptions runtimeOptions, AddCniResult? previousResult,
+        IReadOnlyList<Attachment>? gcAttachments)
     {
         var jsonNode = plugin.PluginParameters.DeepClone();
         
@@ -424,6 +504,22 @@ public static partial class CniRuntime
         {
             jsonNode[Constants.Parsing.PreviousResult] = JsonSerializer
                 .SerializeToNode(previousResult, SerializerOptions)!.AsObject();
+        }
+
+        if (gcAttachments is not null)
+        {
+            var jsonArray = new JsonArray();
+
+            foreach (var gcAttachment in gcAttachments)
+            {
+                jsonArray.Add(new JsonObject
+                {
+                    [Constants.Parsing.GcContainerId] = gcAttachment.PluginOptions.ContainerId!,
+                    [Constants.Parsing.GcInterfaceName] = gcAttachment.PluginOptions.InterfaceName!
+                });
+            }
+
+            jsonNode[Constants.Parsing.GcAttachments] = jsonArray;
         }
 
         return JsonSerializer.Serialize(jsonNode, SerializerOptions);

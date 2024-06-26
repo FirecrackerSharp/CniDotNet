@@ -10,15 +10,15 @@ public interface IInvocationStore
 
     Task<string?> GetBinaryLocationAsync(string pluginType);
     
-    Task AddAttachmentAsync(StoredAttachment storedAttachment);
+    Task AddAttachmentAsync(Attachment attachment);
 
     Task RemoveAttachmentAsync(Plugin plugin, PluginOptions pluginOptions);
     
-    Task<StoredAttachment?> GetAttachmentAsync(Plugin plugin, PluginOptions pluginOptions);
+    Task<Attachment?> GetAttachmentAsync(Plugin plugin, PluginOptions pluginOptions);
 
-    Task<IEnumerable<StoredAttachment>> GetAllAttachmentsForPluginAsync(Plugin plugin);
+    Task<IReadOnlyList<Attachment>> GetAllAttachmentsForPluginAsync(Plugin plugin);
 
-    Task<IEnumerable<StoredAttachment>> GetAllAttachmentsForPluginListAsync(PluginList pluginList);
+    Task<IReadOnlyList<Attachment>> GetAllAttachmentsForPluginListAsync(PluginList pluginList);
 
     Task SetResultAsync(PluginList pluginList, AddCniResult result);
 

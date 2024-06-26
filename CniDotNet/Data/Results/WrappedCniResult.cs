@@ -4,6 +4,8 @@ public sealed class WrappedCniResult<T> where T : class
 {
     public T? SuccessValue { get; }
     public ErrorCniResult? ErrorValue { get; }
+    public Attachment? Attachment { get; internal set; }
+    
     internal string? RawSuccessValue { get; }
 
     public bool IsSuccess => SuccessValue is not null;

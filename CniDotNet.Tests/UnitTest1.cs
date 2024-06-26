@@ -25,12 +25,13 @@ public class UnitTest1
             Args: new TypedArgs([new TypedArgLabel("key", "value")]));
         var firewall = new FirewallPlugin();
         var tcRedirectTap = new TcRedirectTapPlugin();
-        var bandwidth = new BandwidthPlugin(123, 456, 123, 456);
+        var portMap = new PortMapPlugin(Capabilities: new TypedCapabilities(
+            PortMappings: [new TypedCapabilityPortMapping(1000, 2000, TypedCapabilityPortProtocol.Udp)]));
 
         var typedPluginList = new TypedPluginList(
             CniVersion: new Version(1, 0, 0),
             Name: "fcnet",
-            [ptp, firewall, tcRedirectTap, bandwidth]);
+            [ptp, firewall, tcRedirectTap, portMap]);
         var pluginList = typedPluginList.Build();
         var serial = PluginLists.SaveToString(pluginList);
         

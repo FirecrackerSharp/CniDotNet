@@ -3,7 +3,7 @@ using CniDotNet.Typing;
 
 namespace CniDotNet.StandardPlugins.Meta;
 
-public record VrfPlugin(
+public sealed record VrfPlugin(
     string VrfName,
     int? RouteTable = null,
     TypedCapabilities? Capabilities = null,

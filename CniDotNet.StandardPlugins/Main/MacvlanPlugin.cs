@@ -11,6 +11,7 @@ public sealed record MacvlanPlugin(
     MacvlanMode Mode = MacvlanMode.Bridge,
     uint? Mtu = null,
     bool? LinkInContainer = null,
+    string? Mac = null,
     TypedCapabilities? Capabilities = null,
     TypedArgs? Args = null) : TypedPlugin("macvlan", Capabilities, Args)
 {
@@ -40,6 +41,11 @@ public sealed record MacvlanPlugin(
         if (LinkInContainer is not null)
         {
             jsonObject["linkInContainer"] = LinkInContainer;
+        }
+
+        if (Mac is not null)
+        {
+            jsonObject["mac"] = Mac;
         }
     }
 }

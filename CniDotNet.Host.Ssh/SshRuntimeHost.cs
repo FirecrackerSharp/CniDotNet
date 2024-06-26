@@ -1,6 +1,7 @@
 using System.Text;
 using CniDotNet.Abstractions;
 using CniDotNet.Data;
+using CniDotNet.Data.Options;
 using CniDotNet.Host;
 using Renci.SshNet;
 

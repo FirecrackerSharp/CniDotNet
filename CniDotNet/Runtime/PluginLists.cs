@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using CniDotNet.Abstractions;
 using CniDotNet.Data;
+using CniDotNet.Data.Options;
 
 namespace CniDotNet.Runtime;
 

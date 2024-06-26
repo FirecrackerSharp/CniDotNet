@@ -1,6 +1,6 @@
 using CniDotNet.Abstractions;
 
-namespace CniDotNet.Data;
+namespace CniDotNet.Data.Options;
 
 public sealed record InvocationOptions(
     IRuntimeHost RuntimeHost,

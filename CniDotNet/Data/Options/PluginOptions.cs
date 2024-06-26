@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
 
-namespace CniDotNet.Data;
+namespace CniDotNet.Data.Options;
 
 public sealed record PluginOptions(
     string CniVersion,

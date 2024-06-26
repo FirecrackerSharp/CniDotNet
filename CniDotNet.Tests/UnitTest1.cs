@@ -1,7 +1,8 @@
 using System.Text.Json.Nodes;
+using CniDotNet.Abstractions;
 using CniDotNet.Host.Ssh;
 using CniDotNet.Host.Local;
-using CniDotNet.Data;
+using CniDotNet.Data.Options;
 using CniDotNet.StandardPlugins.Ipam;
 using CniDotNet.StandardPlugins.Main;
 using CniDotNet.StandardPlugins.Meta;
@@ -40,7 +41,8 @@ public class UnitTest1
             PluginOptions.FromPluginList(pluginList, "fcnet", "/var/run/netns/testing", "eth0",
                 extraCapabilities: new JsonObject { ["q"] = "a" }), 
             new InvocationOptions(LocalRuntimeHost.Instance, "495762"),
-            new PluginSearchOptions(Directory: "/usr/libexec/cni"));
+            new PluginSearchOptions(Directory: "/usr/libexec/cni"),
+            new InvocationStoreOptions(InMemoryInvocationStore.Instance));
         
         var wrappedResult = await CniRuntime.AddPluginListAsync(pluginList, cniRuntimeOptions);
         var previousResult = wrappedResult.SuccessValue!;

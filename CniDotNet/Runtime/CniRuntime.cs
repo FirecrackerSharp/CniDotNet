@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using CniDotNet.Data;
+using CniDotNet.Data.Options;
 using CniDotNet.Data.Results;
 
 namespace CniDotNet.Runtime;
@@ -45,13 +46,18 @@ public static partial class CniRuntime
         foreach (var plugin in pluginList.Plugins)
         {
             var wrappedResult = await AddPluginAsync(
-                plugin, runtimeOptions, previousResult, cancellationToken);
+                plugin, runtimeOptions, previousResult, pluginList, cancellationToken);
             previousResult = wrappedResult.SuccessValue;
             
             if (wrappedResult.IsError)
             {
                 return WrappedCniResult<AddCniResult>.Error(wrappedResult.ErrorValue!);
             }
+        }
+
+        if (runtimeOptions.InvocationStoreOptions is { StoreResults: true })
+        {
+            await runtimeOptions.InvocationStoreOptions.InvocationStore.SetResultAsync(pluginList, previousResult!);
         }
         
         return WrappedCniResult<AddCniResult>.Success(previousResult!);
@@ -133,13 +139,23 @@ public static partial class CniRuntime
         Plugin plugin,
         RuntimeOptions runtimeOptions,
         AddCniResult? previousResult = null,
+        PluginList? parentPluginList = null,
         CancellationToken cancellationToken = default)
     {
         ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Add, AddRequirements);
         var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
         var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Add,
             pluginBinary, previousResult, cancellationToken);
-        return WrapCniResultWithOutput<AddCniResult>(resultJson);
+
+        var wrappedResult = WrapCniResult<AddCniResult>(resultJson);
+        
+        if (wrappedResult.IsSuccess && runtimeOptions.InvocationStoreOptions is { StoreAttachments: true })
+        {
+            await runtimeOptions.InvocationStoreOptions.InvocationStore.AddAttachmentAsync(new StoredAttachment(
+                runtimeOptions.PluginOptions, plugin, parentPluginList));
+        }
+        
+        return wrappedResult;
     }
     
     public static async Task<ErrorCniResult?> DeletePluginAsync(
@@ -152,7 +168,16 @@ public static partial class CniRuntime
         var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
         var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Delete,
             pluginBinary, previousResult, cancellationToken);
-        return WrapCniResultWithoutOutput(resultJson);
+        
+        var errorResult = WrapPotentialErrorCniResult(resultJson);
+
+        if (errorResult is null && runtimeOptions.InvocationStoreOptions is { StoreAttachments: true })
+        {
+            await runtimeOptions.InvocationStoreOptions.InvocationStore.RemoveAttachmentAsync(
+                plugin, runtimeOptions.PluginOptions);
+        }
+
+        return errorResult;
     }
 
     public static async Task<ErrorCniResult?> CheckPluginAsync(
@@ -165,7 +190,7 @@ public static partial class CniRuntime
         var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
         var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Check,
             pluginBinary, previousResult, cancellationToken);
-        return WrapCniResultWithoutOutput(resultJson);
+        return WrapPotentialErrorCniResult(resultJson);
     }
 
     public static async Task<ErrorCniResult?> VerifyPluginReadinessAsync(
@@ -177,7 +202,7 @@ public static partial class CniRuntime
         var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
         var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Status,
             pluginBinary, previousResult: null, cancellationToken);
-        return WrapCniResultWithoutOutput(resultJson);
+        return WrapPotentialErrorCniResult(resultJson);
     }
     
     public static async Task<WrappedCniResult<VersionCniResult>> ProbePluginVersionsAsync(
@@ -189,10 +214,10 @@ public static partial class CniRuntime
         var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
         var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.ProbeVersions,
             pluginBinary, previousResult: null, cancellationToken);
-        return WrapCniResultWithOutput<VersionCniResult>(resultJson);
+        return WrapCniResult<VersionCniResult>(resultJson);
     }
 
-    private static WrappedCniResult<T> WrapCniResultWithOutput<T>(string resultJson) where T : class
+    private static WrappedCniResult<T> WrapCniResult<T>(string resultJson) where T : class
     {
         if (resultJson.Contains("\"code\": "))
         {
@@ -201,10 +226,10 @@ public static partial class CniRuntime
         }
 
         var successValue = JsonSerializer.Deserialize<T>(resultJson);
-        return WrappedCniResult<T>.Success(successValue!);
+        return WrappedCniResult<T>.Success(successValue!, resultJson);
     }
 
-    private static ErrorCniResult? WrapCniResultWithoutOutput(string resultJson)
+    private static ErrorCniResult? WrapPotentialErrorCniResult(string resultJson)
     {
         return string.IsNullOrWhiteSpace(resultJson)
             ? null
@@ -281,6 +306,14 @@ public static partial class CniRuntime
     private static async Task<string> SearchForPluginBinaryAsync(Plugin plugin, RuntimeOptions runtimeOptions,
         CancellationToken cancellationToken)
     {
+        var usesCache = runtimeOptions.InvocationStoreOptions is { StoreBinaryLocations: true };
+        if (usesCache)
+        {
+            var hitLocation = await runtimeOptions.InvocationStoreOptions!.InvocationStore
+                .GetBinaryLocationAsync(plugin.Type);
+            if (hitLocation is not null) return hitLocation;
+        }
+        
         var matchFromTable = runtimeOptions.PluginSearchOptions.SearchTable?.GetValueOrDefault(plugin.Type);
         if (matchFromTable is not null) return matchFromTable;
 
@@ -300,8 +333,21 @@ public static partial class CniRuntime
         var matchingFiles = await runtimeOptions.InvocationOptions.RuntimeHost.EnumerateDirectoryAsync(
             directory, plugin.Type, runtimeOptions.PluginSearchOptions.DirectorySearchOption,
             cancellationToken);
-        return matchingFiles.FirstOrDefault() ?? throw new PluginBinaryNotFoundException($"Could not find \"{plugin.Type}\" " +
-            $"plugin: the file doesn't exist according to the given search option in the \"{directory}\" directory");
+        var missLocation = matchingFiles.FirstOrDefault();
+        if (missLocation is null)
+        {
+            throw new PluginBinaryNotFoundException(
+                $"Could not find \"{plugin.Type}\" plugin: the file doesn't exist according to the given search option" +
+                $"in the \"{directory}\" directory");
+        }
+
+        if (usesCache)
+        {
+            await runtimeOptions.InvocationStoreOptions!.InvocationStore.SetBinaryLocationAsync(
+                plugin.Type, missLocation);
+        }
+
+        return missLocation;
     }
 
     private static async Task<string> InvokeAsync(

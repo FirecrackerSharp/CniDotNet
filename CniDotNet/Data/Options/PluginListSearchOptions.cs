@@ -1,4 +1,4 @@
-namespace CniDotNet.Data;
+namespace CniDotNet.Data.Options;
 
 public sealed record PluginListSearchOptions(
     string[] FileExtensions,

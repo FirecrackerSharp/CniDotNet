@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Text;
 using CniDotNet.Abstractions;
 using CniDotNet.Data;
+using CniDotNet.Data.Options;
 
 namespace CniDotNet.Host.Local;
 

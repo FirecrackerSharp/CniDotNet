@@ -1,5 +1,5 @@
 using System.Text;
-using CniDotNet.Data;
+using CniDotNet.Data.Options;
 
 namespace CniDotNet.Abstractions;
 

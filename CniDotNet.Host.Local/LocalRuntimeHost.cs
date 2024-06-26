@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Text;
 using CniDotNet.Abstractions;
-using CniDotNet.Data;
 using CniDotNet.Data.Options;
 
 namespace CniDotNet.Host.Local;
@@ -42,6 +41,11 @@ public sealed class LocalRuntimeHost : IRuntimeHost
         SearchOption searchOption, CancellationToken cancellationToken)
     {
         return Task.FromResult(Directory.EnumerateFiles(path, searchPattern, searchOption));
+    }
+
+    public Task<string?> GetEnvironmentVariableAsync(string variableName, CancellationToken cancellationToken)
+    {
+        return Task.FromResult(Environment.GetEnvironmentVariable(variableName));
     }
 
     public Task<IRuntimeHostProcess> StartProcessAsync(string command, Dictionary<string, string> environment,

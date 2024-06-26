@@ -419,7 +419,8 @@ public static partial class CniRuntime
         var matchFromTable = runtimeOptions.PluginSearchOptions.SearchTable?.GetValueOrDefault(plugin.Type);
         if (matchFromTable is not null) return matchFromTable;
 
-        var directory = runtimeOptions.PluginSearchOptions.ActualDirectory;
+        var directory = await runtimeOptions.PluginSearchOptions.GetActualDirectoryAsync(
+                runtimeOptions.InvocationOptions.RuntimeHost, cancellationToken);
         if (directory is null)
         {
             throw new PluginBinaryNotFoundException($"Could not find \"{plugin.Type}\" plugin: directory wasn't specified and " +
@@ -478,9 +479,9 @@ public static partial class CniRuntime
         {
             environment[Constants.Environment.NetworkNamespace] = runtimeOptions.PluginOptions.NetworkNamespace;
         }
-        if (runtimeOptions.PluginSearchOptions.ActualDirectory is not null && runtimeOptions.PluginOptions.IncludePath)
+        if (runtimeOptions.PluginSearchOptions.CachedActualDirectory is not null && runtimeOptions.PluginOptions.IncludePath)
         {
-            environment[Constants.Environment.PluginPath] = runtimeOptions.PluginSearchOptions.ActualDirectory;
+            environment[Constants.Environment.PluginPath] = runtimeOptions.PluginSearchOptions.CachedActualDirectory;
         }
 
         var process = await runtimeOptions.InvocationOptions.RuntimeHost.StartProcessAsync(

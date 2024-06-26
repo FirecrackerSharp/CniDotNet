@@ -80,6 +80,20 @@ public sealed class SshRuntimeHost(ConnectionInfo connectionInfo) : IRuntimeHost
         return outputs;
     }
 
+    public async Task<string?> GetEnvironmentVariableAsync(string variableName, CancellationToken cancellationToken)
+    {
+        var sshCommand = Ssh.CreateCommand($"echo ${variableName}");
+        var asyncResult = sshCommand.BeginExecute();
+
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            if (asyncResult.IsCompleted) break;
+            await Task.Delay(TimeSpan.FromMilliseconds(5), cancellationToken);
+        }
+
+        return sshCommand.EndExecute(asyncResult);
+    }
+
     public async Task<IRuntimeHostProcess> StartProcessAsync(string command, Dictionary<string, string> environment,
         InvocationOptions invocationOptions, CancellationToken cancellationToken)
     {

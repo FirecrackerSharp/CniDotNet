@@ -18,6 +18,8 @@ public interface IRuntimeHost
     Task<IEnumerable<string>> EnumerateDirectoryAsync(string path, string searchPattern, SearchOption searchOption,
         CancellationToken cancellationToken);
 
+    Task<string?> GetEnvironmentVariableAsync(string variableName, CancellationToken cancellationToken);
+
     Task<IRuntimeHostProcess> StartProcessAsync(string command, Dictionary<string, string> environment,
         InvocationOptions invocationOptions, CancellationToken cancellationToken);
     

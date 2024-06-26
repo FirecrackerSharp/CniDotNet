@@ -1,3 +1,5 @@
+using CniDotNet.Abstractions;
+
 namespace CniDotNet.Data.Options;
 
 public sealed record PluginSearchOptions(
@@ -6,5 +8,19 @@ public sealed record PluginSearchOptions(
     string EnvironmentVariable = "PLUGIN_PATH",
     SearchOption DirectorySearchOption = SearchOption.TopDirectoryOnly)
 {
-    internal string? ActualDirectory => Directory ?? Environment.GetEnvironmentVariable(EnvironmentVariable);
+    internal string? CachedActualDirectory { get; private set; }
+    
+    internal async Task<string?> GetActualDirectoryAsync(IRuntimeHost runtimeHost, CancellationToken cancellationToken)
+    {
+        var directory = Directory;
+        if (directory is not null)
+        {
+            CachedActualDirectory = directory;
+            return directory;
+        }
+        
+        directory = await runtimeHost.GetEnvironmentVariableAsync(EnvironmentVariable, cancellationToken);
+        CachedActualDirectory = directory;
+        return directory;
+    }
 }

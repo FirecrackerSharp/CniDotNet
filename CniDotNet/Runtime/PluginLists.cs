@@ -18,8 +18,8 @@ public static class PluginLists
     public static async Task<IReadOnlyList<PluginList>> SearchAsync(
         IRuntimeHost runtimeHost, PluginListSearchOptions pluginListSearchOptions, CancellationToken cancellationToken = default)
     {
-        var directory = pluginListSearchOptions.Directory ??
-                        Environment.GetEnvironmentVariable(pluginListSearchOptions.EnvironmentVariable);
+        var directory = pluginListSearchOptions.Directory ?? await runtimeHost.GetEnvironmentVariableAsync(
+            pluginListSearchOptions.EnvironmentVariable, cancellationToken);
         if (directory is null) return [];
 
         if (!runtimeHost.DirectoryExists(directory)) return [];

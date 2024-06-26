@@ -1,9 +1,9 @@
-using CniDotNet.Host;
+using CniDotNet.Abstractions;
 
 namespace CniDotNet.Data;
 
 public sealed record InvocationOptions(
-    ICniHost CniHost,
+    IRuntimeHost RuntimeHost,
     string? ElevationPassword = null,
     string SuPath = "/bin/su",
     string BashPath = "/bin/bash");

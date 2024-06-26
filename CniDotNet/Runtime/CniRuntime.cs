@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using CniDotNet.Data;
@@ -8,8 +9,6 @@ namespace CniDotNet.Runtime;
 
 public static partial class CniRuntime
 {
-    public static CniLock MutativeOperationLock { get; } = new();
-
     public const PluginOptionRequirement AddRequirements = PluginOptionRequirement.ContainerId |
                                                            PluginOptionRequirement.InterfaceName |
                                                            PluginOptionRequirement.NetworkNamespace;
@@ -130,22 +129,6 @@ public static partial class CniRuntime
         return WrappedCniResult<IReadOnlyDictionary<Plugin, VersionCniResult>>.Success(results);
     }
 
-    public static async Task<ErrorCniResult?> GarbageCollectPluginListAsync(
-        PluginList pluginList,
-        RuntimeOptions runtimeOptions,
-        CancellationToken cancellationToken = default)
-    {
-        if (pluginList.DisableGc) return null;
-
-        foreach (var plugin in pluginList.Plugins)
-        {
-            var errorCniResult = await GarbageCollectPluginAsync(plugin, runtimeOptions, cancellationToken);
-            if (errorCniResult is not null) return errorCniResult;
-        }
-
-        return null;
-    }
-
     public static async Task<WrappedCniResult<AddCniResult>> AddPluginAsync(
         Plugin plugin,
         RuntimeOptions runtimeOptions,
@@ -153,18 +136,10 @@ public static partial class CniRuntime
         CancellationToken cancellationToken = default)
     {
         ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Add, AddRequirements);
-        try
-        {
-            await MutativeOperationLock.Semaphore.WaitAsync(cancellationToken);
-            var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
-            var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Add,
-                pluginBinary, previousResult, cancellationToken);
-            return WrapCniResultWithOutput<AddCniResult>(resultJson);
-        }
-        finally
-        {
-            MutativeOperationLock.Semaphore.Release();
-        }
+        var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
+        var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Add,
+            pluginBinary, previousResult, cancellationToken);
+        return WrapCniResultWithOutput<AddCniResult>(resultJson);
     }
     
     public static async Task<ErrorCniResult?> DeletePluginAsync(
@@ -174,18 +149,10 @@ public static partial class CniRuntime
         CancellationToken cancellationToken = default)
     {
         ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Delete, DeleteRequirements);
-        try
-        {
-            await MutativeOperationLock.Semaphore.WaitAsync(cancellationToken);
-            var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
-            var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Delete,
-                pluginBinary, previousResult, cancellationToken);
-            return WrapCniResultWithoutOutput(resultJson);
-        }
-        finally
-        {
-            MutativeOperationLock.Semaphore.Release();
-        }
+        var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
+        var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Delete,
+            pluginBinary, previousResult, cancellationToken);
+        return WrapCniResultWithoutOutput(resultJson);
     }
 
     public static async Task<ErrorCniResult?> CheckPluginAsync(
@@ -223,27 +190,6 @@ public static partial class CniRuntime
         var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.ProbeVersions,
             pluginBinary, previousResult: null, cancellationToken);
         return WrapCniResultWithOutput<VersionCniResult>(resultJson);
-    }
-
-    public static async Task<ErrorCniResult?> GarbageCollectPluginAsync(
-        Plugin plugin,
-        RuntimeOptions runtimeOptions,
-        CancellationToken cancellationToken = default)
-    {
-        ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.GarbageCollect, GarbageCollectRequirements);
-        try
-        {
-            await MutativeOperationLock.Semaphore.WaitAsync(cancellationToken);
-            var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
-            var resultJson = await InvokeAsync(plugin, runtimeOptions,
-                operation: Constants.Operations.GarbageCollect,
-                pluginBinary, previousResult: null, cancellationToken);
-            return WrapCniResultWithoutOutput(resultJson);
-        }
-        finally
-        {
-            MutativeOperationLock.Semaphore.Release();
-        }
     }
 
     private static WrappedCniResult<T> WrapCniResultWithOutput<T>(string resultJson) where T : class
@@ -345,13 +291,13 @@ public static partial class CniRuntime
                                               $"environment variable doesn't exist");
         }
 
-        if (!runtimeOptions.InvocationOptions.CniHost.DirectoryExists(directory))
+        if (!runtimeOptions.InvocationOptions.RuntimeHost.DirectoryExists(directory))
         {
             throw new PluginBinaryNotFoundException($"Could not find \"{plugin.Type}\" plugin: \"{directory}\" directory " +
                                               $"doesn't exist");
         }
 
-        var matchingFiles = await runtimeOptions.InvocationOptions.CniHost.EnumerateDirectoryAsync(
+        var matchingFiles = await runtimeOptions.InvocationOptions.RuntimeHost.EnumerateDirectoryAsync(
             directory, plugin.Type, runtimeOptions.PluginSearchOptions.DirectorySearchOption,
             cancellationToken);
         return matchingFiles.FirstOrDefault() ?? throw new PluginBinaryNotFoundException($"Could not find \"{plugin.Type}\" " +
@@ -367,8 +313,8 @@ public static partial class CniRuntime
         CancellationToken cancellationToken)
     {
         var stdinJson = DerivePluginInput(plugin, runtimeOptions, previousResult);
-        var inputPath = runtimeOptions.InvocationOptions.CniHost.GetTempFilePath();
-        await runtimeOptions.InvocationOptions.CniHost.WriteFileAsync(inputPath, stdinJson, cancellationToken);
+        var inputPath = runtimeOptions.InvocationOptions.RuntimeHost.GetTempFilePath();
+        await runtimeOptions.InvocationOptions.RuntimeHost.WriteFileAsync(inputPath, stdinJson, cancellationToken);
         
         var environment = new Dictionary<string, string> { { Constants.Environment.Command, operation } };
         if (runtimeOptions.PluginOptions.ContainerId is not null)
@@ -388,10 +334,10 @@ public static partial class CniRuntime
             environment[Constants.Environment.PluginPath] = runtimeOptions.PluginSearchOptions.ActualDirectory;
         }
 
-        var process = await runtimeOptions.InvocationOptions.CniHost.StartProcessAsync(
+        var process = await runtimeOptions.InvocationOptions.RuntimeHost.StartProcessAsync(
             $"{pluginBinary} < {inputPath}", environment, runtimeOptions.InvocationOptions, cancellationToken);
         await process.WaitForExitAsync(cancellationToken);
-        await runtimeOptions.InvocationOptions.CniHost.DeleteFileAsync(inputPath, cancellationToken);
+        await runtimeOptions.InvocationOptions.RuntimeHost.DeleteFileAsync(inputPath, cancellationToken);
         
         return process.CurrentOutput;
     }
@@ -412,6 +358,20 @@ public static partial class CniRuntime
         if (plugin.Args is not null)
         {
             jsonNode[Constants.Parsing.Args] = plugin.Args.DeepClone();
+        }
+
+        var extraCapabilities = runtimeOptions.PluginOptions.ExtraCapabilities;
+        if (extraCapabilities is not null)
+        {
+            jsonNode[Constants.Parsing.RuntimeConfig] ??= new JsonObject();
+            foreach (var (capabilityKey, capabilityValue) in extraCapabilities)
+            {
+                if (capabilityValue is null) continue;
+                if (!jsonNode[Constants.Parsing.RuntimeConfig]!.AsObject().ContainsKey(capabilityKey))
+                {
+                    jsonNode[Constants.Parsing.RuntimeConfig]![capabilityKey] = capabilityValue.DeepClone();
+                }
+            }
         }
 
         if (previousResult is not null)

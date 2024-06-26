@@ -1,15 +1,16 @@
 using System.Diagnostics;
 using System.Text;
+using CniDotNet.Abstractions;
 
 namespace CniDotNet.Host.Local;
 
-internal sealed class LocalCniHostProcess : ICniHostProcess
+internal sealed class LocalRuntimeHostProcess : IRuntimeHostProcess
 {
     private readonly Process _osProcess;
     private readonly StringBuilder _outputBuilder = new();
     public string CurrentOutput => _outputBuilder.ToString();
     
-    internal LocalCniHostProcess(Process osProcess)
+    internal LocalRuntimeHostProcess(Process osProcess)
     {
         _osProcess = osProcess;
         _osProcess.BeginOutputReadLine();

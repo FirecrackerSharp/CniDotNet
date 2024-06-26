@@ -1,9 +1,9 @@
 using System.Text;
 using CniDotNet.Data;
 
-namespace CniDotNet.Host;
+namespace CniDotNet.Abstractions;
 
-public interface ICniHost
+public interface IRuntimeHost
 {
     string GetTempFilePath();
 
@@ -18,7 +18,7 @@ public interface ICniHost
     Task<IEnumerable<string>> EnumerateDirectoryAsync(string path, string searchPattern, SearchOption searchOption,
         CancellationToken cancellationToken);
 
-    Task<ICniHostProcess> StartProcessAsync(string command, Dictionary<string, string> environment,
+    Task<IRuntimeHostProcess> StartProcessAsync(string command, Dictionary<string, string> environment,
         InvocationOptions invocationOptions, CancellationToken cancellationToken);
     
     public static string BuildEnvironmentString(Dictionary<string, string> environment)

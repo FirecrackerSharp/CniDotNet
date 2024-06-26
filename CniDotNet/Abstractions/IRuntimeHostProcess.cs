@@ -1,6 +1,6 @@
-namespace CniDotNet.Host;
+namespace CniDotNet.Abstractions;
 
-public interface ICniHostProcess
+public interface IRuntimeHostProcess
 {
     string CurrentOutput { get; }
 

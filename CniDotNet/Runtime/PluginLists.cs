@@ -1,29 +1,29 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using CniDotNet.Abstractions;
 using CniDotNet.Data;
-using CniDotNet.Host;
 
 namespace CniDotNet.Runtime;
 
 public static class PluginLists
 {
     public static async Task<PluginList?> SearchFirstAsync(
-        ICniHost cniHost, PluginListSearchOptions pluginListSearchOptions, CancellationToken cancellationToken = default)
+        IRuntimeHost runtimeHost, PluginListSearchOptions pluginListSearchOptions, CancellationToken cancellationToken = default)
     {
-        var matches = await SearchAsync(cniHost, pluginListSearchOptions, cancellationToken);
+        var matches = await SearchAsync(runtimeHost, pluginListSearchOptions, cancellationToken);
         return matches.Count == 0 ? null : matches[0];
     }
     
     public static async Task<IReadOnlyList<PluginList>> SearchAsync(
-        ICniHost cniHost, PluginListSearchOptions pluginListSearchOptions, CancellationToken cancellationToken = default)
+        IRuntimeHost runtimeHost, PluginListSearchOptions pluginListSearchOptions, CancellationToken cancellationToken = default)
     {
         var directory = pluginListSearchOptions.Directory ??
                         Environment.GetEnvironmentVariable(pluginListSearchOptions.EnvironmentVariable);
         if (directory is null) return [];
 
-        if (!cniHost.DirectoryExists(directory)) return [];
+        if (!runtimeHost.DirectoryExists(directory)) return [];
 
-        var files = await cniHost
+        var files = await runtimeHost
             .EnumerateDirectoryAsync(directory, pluginListSearchOptions.SearchQuery ?? "",
                 pluginListSearchOptions.DirectorySearchOption, cancellationToken);
 
@@ -34,7 +34,7 @@ public static class PluginLists
         {
             try
             {
-                var pluginList = await LoadFromFileAsync(cniHost, file, cancellationToken);
+                var pluginList = await LoadFromFileAsync(runtimeHost, file, cancellationToken);
                 pluginLists.Add(pluginList);
             }
             catch (Exception)
@@ -48,9 +48,9 @@ public static class PluginLists
     }
     
     public static async Task<PluginList> LoadFromFileAsync(
-        ICniHost cniHost, string filePath, CancellationToken cancellationToken = default)
+        IRuntimeHost runtimeHost, string filePath, CancellationToken cancellationToken = default)
     {
-        var sourceString = await cniHost.ReadFileAsync(filePath, cancellationToken);
+        var sourceString = await runtimeHost.ReadFileAsync(filePath, cancellationToken);
         return LoadFromString(sourceString);
     }
 
@@ -63,10 +63,10 @@ public static class PluginLists
     }
 
     public static async Task SaveToFileAsync(
-        PluginList pluginList, ICniHost cniHost, string filePath, bool prettyPrint = true, CancellationToken cancellationToken = default)
+        PluginList pluginList, IRuntimeHost runtimeHost, string filePath, bool prettyPrint = true, CancellationToken cancellationToken = default)
     {
         var content = SaveToString(pluginList, prettyPrint);
-        await cniHost.WriteFileAsync(filePath, content, cancellationToken);
+        await runtimeHost.WriteFileAsync(filePath, content, cancellationToken);
     }
 
     public static string SaveToString(PluginList pluginList, bool prettyPrint = true)

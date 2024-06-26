@@ -77,7 +77,7 @@ public static class NetworkNamespaces
         InvocationOptions invocationOptions,
         CancellationToken cancellationToken = default)
     {
-        var process = await invocationOptions.CniHost.StartProcessAsync(
+        var process = await invocationOptions.RuntimeHost.StartProcessAsync(
             command, new Dictionary<string, string>(), invocationOptions, cancellationToken);
         await process.WaitForExitAsync(cancellationToken);
         return string.IsNullOrEmpty(process.CurrentOutput) ? null : process.CurrentOutput;

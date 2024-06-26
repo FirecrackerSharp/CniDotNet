@@ -1,14 +1,15 @@
 using System.Diagnostics;
 using System.Text;
+using CniDotNet.Abstractions;
 using CniDotNet.Data;
 
 namespace CniDotNet.Host.Local;
 
-public sealed class LocalCniHost : ICniHost
+public sealed class LocalRuntimeHost : IRuntimeHost
 {
-    public static LocalCniHost Instance { get; } = new();
+    public static LocalRuntimeHost Instance { get; } = new();
     
-    private LocalCniHost() {}
+    private LocalRuntimeHost() {}
 
     public string GetTempFilePath()
     {
@@ -42,7 +43,7 @@ public sealed class LocalCniHost : ICniHost
         return Task.FromResult(Directory.EnumerateFiles(path, searchPattern, searchOption));
     }
 
-    public Task<ICniHostProcess> StartProcessAsync(string command, Dictionary<string, string> environment,
+    public Task<IRuntimeHostProcess> StartProcessAsync(string command, Dictionary<string, string> environment,
         InvocationOptions invocationOptions, CancellationToken cancellationToken)
     {
         if (Environment.UserName == "root")
@@ -59,10 +60,10 @@ public sealed class LocalCniHost : ICniHost
         return StartProcessWithElevationAsync(command, environment, invocationOptions, cancellationToken);
     }
 
-    private static async Task<ICniHostProcess> StartProcessWithoutElevationAsync(
+    private static async Task<IRuntimeHostProcess> StartProcessWithoutElevationAsync(
         string command, Dictionary<string, string> environment, InvocationOptions invocationOptions, CancellationToken cancellationToken)
     {
-        var environmentString = ICniHost.BuildEnvironmentString(environment);
+        var environmentString = IRuntimeHost.BuildEnvironmentString(environment);
         var process = new Process
         {
             StartInfo = new ProcessStartInfo(invocationOptions.BashPath)
@@ -74,17 +75,17 @@ public sealed class LocalCniHost : ICniHost
         };
 
         process.Start();
-        var cniHostProcess = new LocalCniHostProcess(process);
+        var cniHostProcess = new LocalRuntimeHostProcess(process);
 
         await process.StandardInput.WriteLineAsync(new StringBuilder($"{environmentString} {command} ; exit"), cancellationToken);
 
         return cniHostProcess;
     }
     
-    private static async Task<ICniHostProcess> StartProcessWithElevationAsync(string command, Dictionary<string, string> environment,
+    private static async Task<IRuntimeHostProcess> StartProcessWithElevationAsync(string command, Dictionary<string, string> environment,
         InvocationOptions invocationOptions, CancellationToken cancellationToken)
     {
-        var environmentString = ICniHost.BuildEnvironmentString(environment);
+        var environmentString = IRuntimeHost.BuildEnvironmentString(environment);
         var process = new Process
         {
             StartInfo = new ProcessStartInfo(invocationOptions.SuPath)
@@ -96,7 +97,7 @@ public sealed class LocalCniHost : ICniHost
         };
 
         process.Start();
-        var cniHostProcess = new LocalCniHostProcess(process);
+        var cniHostProcess = new LocalRuntimeHostProcess(process);
         
         await process.StandardInput.WriteLineAsync(new StringBuilder(invocationOptions.ElevationPassword), cancellationToken);
         await process.StandardInput.WriteLineAsync(new StringBuilder($"{environmentString} {command} ; exit"), cancellationToken);

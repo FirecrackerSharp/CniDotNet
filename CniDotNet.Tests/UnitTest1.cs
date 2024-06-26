@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using CniDotNet.Host.Ssh;
 using CniDotNet.Host.Local;
 using CniDotNet.Data;
@@ -36,8 +37,9 @@ public class UnitTest1
         var serial = PluginLists.SaveToString(pluginList);
         
         var cniRuntimeOptions = new RuntimeOptions(
-            PluginOptions.FromPluginList(pluginList, "fcnet", "/var/run/netns/testing", "eth0"), 
-            new InvocationOptions(LocalCniHost.Instance, "495762"),
+            PluginOptions.FromPluginList(pluginList, "fcnet", "/var/run/netns/testing", "eth0",
+                extraCapabilities: new JsonObject { ["q"] = "a" }), 
+            new InvocationOptions(LocalRuntimeHost.Instance, "495762"),
             new PluginSearchOptions(Directory: "/usr/libexec/cni"));
         
         var wrappedResult = await CniRuntime.AddPluginListAsync(pluginList, cniRuntimeOptions);
@@ -57,7 +59,7 @@ public class UnitTest1
     [Fact]
     public async Task Test2()
     {
-        using var cniHost = new SshCniHost(new PasswordConnectionInfo("172.20.2.11", 8009, "root", "495762"));
+        using var cniHost = new SshRuntimeHost(new PasswordConnectionInfo("172.20.2.11", 8009, "root", "495762"));
         var invocationOptions = new InvocationOptions(cniHost);
         
         var namespaces = await NetworkNamespaces.GetAllAsync(invocationOptions);

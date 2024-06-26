@@ -1,11 +1,12 @@
 using System.Text;
+using CniDotNet.Abstractions;
 using CniDotNet.Data;
 using CniDotNet.Host;
 using Renci.SshNet;
 
 namespace CniDotNet.Host.Ssh;
 
-public sealed class SshCniHost(ConnectionInfo connectionInfo) : ICniHost, IDisposable
+public sealed class SshRuntimeHost(ConnectionInfo connectionInfo) : IRuntimeHost, IDisposable
 {
     private SshClient? _backingSsh;
     private SftpClient? _backingSftp;
@@ -78,15 +79,15 @@ public sealed class SshCniHost(ConnectionInfo connectionInfo) : ICniHost, IDispo
         return outputs;
     }
 
-    public async Task<ICniHostProcess> StartProcessAsync(string command, Dictionary<string, string> environment,
+    public async Task<IRuntimeHostProcess> StartProcessAsync(string command, Dictionary<string, string> environment,
         InvocationOptions invocationOptions, CancellationToken cancellationToken)
     {
-        var environmentString = ICniHost.BuildEnvironmentString(environment);
+        var environmentString = IRuntimeHost.BuildEnvironmentString(environment);
         
         if (connectionInfo.Username == "root")
         {
             var nonElevatedCommand = Ssh.CreateCommand($"{environmentString} {command}");
-            return new SshCniHostProcess(nonElevatedCommand, nonElevatedCommand.BeginExecute());
+            return new SshRuntimeHostProcess(nonElevatedCommand, nonElevatedCommand.BeginExecute());
         }
 
         if (invocationOptions.ElevationPassword is null)
@@ -100,7 +101,7 @@ public sealed class SshCniHost(ConnectionInfo connectionInfo) : ICniHost, IDispo
         var inputStreamWriter = new StreamWriter(elevationCommand.CreateInputStream());
         await inputStreamWriter.WriteLineAsync(new StringBuilder(invocationOptions.ElevationPassword), cancellationToken);
         await inputStreamWriter.WriteLineAsync(new StringBuilder($"{environmentString} {command} ; exit"), cancellationToken);
-        return new SshCniHostProcess(elevationCommand, asyncResult);
+        return new SshRuntimeHostProcess(elevationCommand, asyncResult);
     }
 
     public void Dispose()

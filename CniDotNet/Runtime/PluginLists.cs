@@ -118,6 +118,7 @@ public static class PluginLists
         var pluginParameters = jsonNode.AsObject();
         pluginParameters.Remove(Constants.Parsing.Type);
         if (capabilities is not null) pluginParameters.Remove(Constants.Parsing.Capabilities);
+        if (args is not null) pluginParameters.Remove(Constants.Parsing.Args);
 
         return new Plugin(type, capabilities, args, pluginParameters);
     }

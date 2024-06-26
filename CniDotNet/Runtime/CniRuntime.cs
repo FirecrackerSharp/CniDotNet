@@ -88,20 +88,11 @@ public static partial class CniRuntime
         RuntimeOptions runtimeOptions,
         CancellationToken cancellationToken = default)
     {
-        if (runtimeOptions.InvocationStoreOptions is not { StoreResults: true })
-        {
-            throw new ItemNotRetrievedFromStoreException(
-                "Store hasn't been configured for storing results, and yet a result is being requested");
-        }
-
-        var previousResult = await runtimeOptions.InvocationStoreOptions.InvocationStore.GetResultAsync(pluginList);
-        if (previousResult is null)
-        {
-            throw new ItemNotRetrievedFromStoreException(
-                $"No result has been stored for given plugin list (hash code {pluginList.GetHashCode()}");
-        }
-
-        return await DeletePluginListAsync(pluginList, runtimeOptions, previousResult, cancellationToken);
+        return await DeletePluginListAsync(
+            pluginList,
+            runtimeOptions,
+            await GetStoredResultAsync(pluginList, runtimeOptions, cancellationToken),
+            cancellationToken);
     }
 
     public static async Task<ErrorCniResult?> CheckPluginListAsync(
@@ -120,6 +111,18 @@ public static partial class CniRuntime
         }
 
         return null;
+    }
+
+    public static async Task<ErrorCniResult?> CheckPluginListWithStoreAsync(
+        PluginList pluginList,
+        RuntimeOptions runtimeOptions,
+        CancellationToken cancellationToken = default)
+    {
+        return await CheckPluginListAsync(
+            pluginList,
+            runtimeOptions,
+            await GetStoredResultAsync(pluginList, runtimeOptions, cancellationToken),
+            cancellationToken);
     }
 
     public static async Task<ErrorCniResult?> VerifyPluginListReadinessAsync(
@@ -312,6 +315,27 @@ public static partial class CniRuntime
         return string.IsNullOrWhiteSpace(resultJson)
             ? null
             : JsonSerializer.Deserialize<ErrorCniResult>(resultJson);
+    }
+    
+    private static async Task<AddCniResult> GetStoredResultAsync(
+        PluginList pluginList,
+        RuntimeOptions runtimeOptions,
+        CancellationToken cancellationToken = default)
+    {
+        if (runtimeOptions.InvocationStoreOptions is not { StoreResults: true })
+        {
+            throw new ItemNotRetrievedFromStoreException(
+                "Store hasn't been configured for storing results, and yet a result is being requested");
+        }
+
+        var previousResult = await runtimeOptions.InvocationStoreOptions.InvocationStore.GetResultAsync(pluginList);
+        if (previousResult is null)
+        {
+            throw new ItemNotRetrievedFromStoreException(
+                $"No result has been stored for given plugin list (hash code {pluginList.GetHashCode()}");
+        }
+
+        return previousResult;
     }
 
     private static void ValidatePluginOptions(PluginOptions pluginOptions, string operation,

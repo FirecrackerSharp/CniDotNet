@@ -5,8 +5,6 @@ namespace CniDotNet.Abstractions;
 
 public interface IRuntimeHost
 {
-    string GetTempFilePath();
-
     Task WriteFileAsync(string path, string content, CancellationToken cancellationToken);
 
     bool DirectoryExists(string path);

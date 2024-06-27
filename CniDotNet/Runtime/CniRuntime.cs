@@ -463,8 +463,6 @@ public static partial class CniRuntime
         CancellationToken cancellationToken)
     {
         var stdinJson = DerivePluginInput(plugin, runtimeOptions, previousResult, gcAttachments);
-        var inputPath = runtimeOptions.InvocationOptions.RuntimeHost.GetTempFilePath();
-        await runtimeOptions.InvocationOptions.RuntimeHost.WriteFileAsync(inputPath, stdinJson, cancellationToken);
         
         var environment = new Dictionary<string, string> { { Constants.Environment.Command, operation } };
         if (runtimeOptions.PluginOptions.ContainerId is not null)
@@ -485,10 +483,8 @@ public static partial class CniRuntime
         }
 
         var process = await runtimeOptions.InvocationOptions.RuntimeHost.StartProcessAsync(
-            $"{pluginBinary} < {inputPath}", environment, runtimeOptions.InvocationOptions, cancellationToken);
+            $"{pluginBinary} <<< '{stdinJson}'", environment, runtimeOptions.InvocationOptions, cancellationToken);
         await process.WaitForExitAsync(cancellationToken);
-        await runtimeOptions.InvocationOptions.RuntimeHost.DeleteFileAsync(inputPath, cancellationToken);
-        
         return process.CurrentOutput;
     }
     

@@ -11,11 +11,6 @@ public sealed class LocalRuntimeHost : IRuntimeHost
     
     private LocalRuntimeHost() {}
 
-    public string GetTempFilePath()
-    {
-        return Path.GetTempFileName();
-    }
-
     public Task WriteFileAsync(string path, string content, CancellationToken cancellationToken)
     {
         return File.WriteAllTextAsync(path, content, cancellationToken);

@@ -1,8 +1,6 @@
 using System.Text;
 using CniDotNet.Abstractions;
-using CniDotNet.Data;
 using CniDotNet.Data.Options;
-using CniDotNet.Host;
 using Renci.SshNet;
 
 namespace CniDotNet.Host.Ssh;
@@ -34,11 +32,6 @@ public sealed class SshRuntimeHost(ConnectionInfo connectionInfo) : IRuntimeHost
             _backingSftp.Connect();
             return _backingSftp;
         }
-    }
-    
-    public string GetTempFilePath()
-    {
-        return $"/tmp/{Guid.NewGuid()}";
     }
 
     public async Task WriteFileAsync(string path, string content, CancellationToken cancellationToken)

@@ -10,6 +10,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="AutoFixture.Xunit2" Version="4.18.1" />
         <PackageReference Include="coverlet.collector" Version="6.0.2">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -28,6 +29,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\CniDotNet.Ssh\CniDotNet.Ssh.csproj" />
       <ProjectReference Include="..\CniDotNet.StandardPlugins\CniDotNet.StandardPlugins.csproj" />
       <ProjectReference Include="..\CniDotNet\CniDotNet.csproj" />
     </ItemGroup>

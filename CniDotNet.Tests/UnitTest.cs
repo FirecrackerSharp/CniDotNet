@@ -2,10 +2,12 @@ using System.Text.Json.Nodes;
 using CniDotNet.Abstractions;
 using CniDotNet.Data.Options;
 using CniDotNet.Runtime;
+using CniDotNet.Ssh;
 using CniDotNet.StandardPlugins.Ipam;
 using CniDotNet.StandardPlugins.Main;
 using CniDotNet.StandardPlugins.Meta;
 using CniDotNet.Typing;
+using Renci.SshNet;
 
 namespace CniDotNet.Tests;
 
@@ -30,14 +32,16 @@ public class UnitTest
         var typedPluginList = new TypedPluginList(
             CniVersion: new Version(1, 0, 0),
             Name: "fcnet",
-            [ptp, firewall, tcRedirectTap, portMap]);
+            [ptp, firewall, tcRedirectTap]);
         var pluginList = typedPluginList.Build();
+
+        using var host = new SshRuntimeHost(new PasswordConnectionInfo("172.20.2.11", 8009, "root", "495762"));
         
         var runtimeOptions = new RuntimeOptions(
             PluginOptions.FromPluginList(pluginList, "fcnet", "/var/run/netns/testing", "eth0",
                 extraCapabilities: new JsonObject { ["q"] = "a" }), 
-            new InvocationOptions(LocalRuntimeHost.Instance, "495762"),
-            new PluginSearchOptions(Directory: "/usr/libexec/cni"),
+            new InvocationOptions(host, "495762"),
+            new PluginSearchOptions(Directory: "/root/plugins"),
             new InvocationStoreOptions(InMemoryInvocationStore.Instance));
 
         var w = await CniRuntime.AddPluginListAsync(pluginList, runtimeOptions);

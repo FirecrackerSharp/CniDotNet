@@ -23,4 +23,6 @@ public interface IInvocationStore
     Task SetResultAsync(PluginList pluginList, AddCniResult result);
 
     Task<AddCniResult?> GetResultAsync(PluginList pluginList);
+
+    Task RemoveResultAsync(PluginList pluginList);
 }

@@ -80,6 +80,11 @@ public static partial class CniRuntime
             if (errorCniResult is not null) return errorCniResult;
         }
 
+        if (runtimeOptions.InvocationStoreOptions is { StoreResults: true })
+        {
+            await runtimeOptions.InvocationStoreOptions.InvocationStore.RemoveResultAsync(pluginList);
+        }
+
         return null;
     }
 
@@ -250,16 +255,7 @@ public static partial class CniRuntime
         var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Check,
             pluginBinary, previousResult, gcAttachments: null, cancellationToken);
         
-        var errorResult =  WrapPotentialErrorCniResult(resultJson);
-        
-        // if check gives some error, remove stored attachment
-        if (errorResult is not null && runtimeOptions.InvocationStoreOptions is { StoreAttachments: true })
-        {
-            await runtimeOptions.InvocationStoreOptions.InvocationStore.RemoveAttachmentAsync(
-                plugin, runtimeOptions.PluginOptions);
-        }
-
-        return errorResult;
+        return WrapPotentialErrorCniResult(resultJson);
     }
 
     public static async Task<ErrorCniResult?> VerifyPluginReadinessAsync(
@@ -332,7 +328,7 @@ public static partial class CniRuntime
         if (previousResult is null)
         {
             throw new ItemNotRetrievedFromStoreException(
-                $"No result has been stored for given plugin list (hash code {pluginList.GetHashCode()}");
+                $"No result has been stored for given plugin list (hash code {pluginList.GetHashCode()})");
         }
 
         return previousResult;

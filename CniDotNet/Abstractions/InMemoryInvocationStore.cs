@@ -66,4 +66,10 @@ public sealed class InMemoryInvocationStore : IInvocationStore
     {
         return Task.FromResult(_resultEntries.GetValueOrDefault(pluginList));
     }
+
+    public Task RemoveResultAsync(PluginList pluginList)
+    {
+        _resultEntries.Remove(pluginList);
+        return Task.CompletedTask;
+    }
 }

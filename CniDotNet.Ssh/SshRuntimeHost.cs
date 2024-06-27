@@ -1,8 +1,9 @@
 using System.Text;
+using CniDotNet.Abstractions;
 using CniDotNet.Data.Options;
 using Renci.SshNet;
 
-namespace CniDotNet.Abstractions;
+namespace CniDotNet.Ssh;
 
 public sealed class SshRuntimeHost(ConnectionInfo connectionInfo) : IRuntimeHost, IDisposable
 {

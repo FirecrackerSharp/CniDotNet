@@ -1,6 +1,7 @@
+using CniDotNet.Abstractions;
 using Renci.SshNet;
 
-namespace CniDotNet.Abstractions;
+namespace CniDotNet.Ssh;
 
 internal sealed class SshRuntimeHostProcess(SshCommand sshCommand, IAsyncResult asyncResult) : IRuntimeHostProcess
 {

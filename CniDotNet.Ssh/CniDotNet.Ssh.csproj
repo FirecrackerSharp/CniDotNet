@@ -7,7 +7,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="EnumExtensions.System.Text.Json" Version="1.2.0" />
+      <ProjectReference Include="..\CniDotNet\CniDotNet.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="SSH.NET" Version="2024.0.0" />
     </ItemGroup>
 
 </Project>

@@ -56,9 +56,14 @@ public class PluginListsTests
 		    await File.WriteAllTextAsync($"/tmp/{i}.notconflist", ExpectJson);
 	    }
 
-	    var matches = await PluginLists.SearchAsync(LocalRuntimeHost.Instance,
+	    var envVarMatches = await PluginLists.SearchAsync(LocalRuntimeHost.Instance,
 		    new PluginListSearchOptions([".conflist"]));
-	    matches.Count.Should().Be(3);
+	    envVarMatches.Count.Should().Be(3);
+	    Environment.SetEnvironmentVariable("CONF_LIST_PATH", "", EnvironmentVariableTarget.Process);
+	    
+	    var traditionalMatches = await PluginLists.SearchAsync(LocalRuntimeHost.Instance,
+		    new PluginListSearchOptions([".conflist"], Directory: "/tmp"));
+	    traditionalMatches.Count.Should().Be(3);
     }
 
     private static void AssertPluginList(PluginList actualPluginList)

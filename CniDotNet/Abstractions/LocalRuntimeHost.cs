@@ -1,9 +1,8 @@
 using System.Diagnostics;
 using System.Text;
-using CniDotNet.Abstractions;
 using CniDotNet.Data.Options;
 
-namespace CniDotNet.Host.Local;
+namespace CniDotNet.Abstractions;
 
 public sealed class LocalRuntimeHost : IRuntimeHost
 {

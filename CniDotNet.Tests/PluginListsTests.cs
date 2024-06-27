@@ -1,6 +1,6 @@
+using CniDotNet.Abstractions;
 using CniDotNet.Data;
 using CniDotNet.Data.Options;
-using CniDotNet.Host.Local;
 using CniDotNet.Runtime;
 using FluentAssertions;
 

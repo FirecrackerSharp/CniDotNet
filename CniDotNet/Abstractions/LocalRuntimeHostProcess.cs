@@ -1,8 +1,7 @@
 using System.Diagnostics;
 using System.Text;
-using CniDotNet.Abstractions;
 
-namespace CniDotNet.Host.Local;
+namespace CniDotNet.Abstractions;
 
 internal sealed class LocalRuntimeHostProcess : IRuntimeHostProcess
 {

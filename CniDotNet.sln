@@ -4,10 +4,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CniDotNet", "CniDotNet\CniD
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CniDotNet.Tests", "CniDotNet.Tests\CniDotNet.Tests.csproj", "{051F9F85-B61D-4690-A14A-CD11EF30E57A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CniDotNet.Host.Local", "CniDotNet.Host.Local\CniDotNet.Host.Local.csproj", "{1A49F2C6-BC13-4C76-A454-3B29A216F5F4}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CniDotNet.Host.Ssh", "CniDotNet.Host.Ssh\CniDotNet.Host.Ssh.csproj", "{A54849C1-C6F4-40D7-B2B4-43E0D99B4F64}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CniDotNet.StandardPlugins", "CniDotNet.StandardPlugins\CniDotNet.StandardPlugins.csproj", "{0B477CE5-1760-48B4-81B1-3A00DC80A675}"
 EndProject
 Global
@@ -24,14 +20,6 @@ Global
 		{051F9F85-B61D-4690-A14A-CD11EF30E57A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{051F9F85-B61D-4690-A14A-CD11EF30E57A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{051F9F85-B61D-4690-A14A-CD11EF30E57A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1A49F2C6-BC13-4C76-A454-3B29A216F5F4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1A49F2C6-BC13-4C76-A454-3B29A216F5F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1A49F2C6-BC13-4C76-A454-3B29A216F5F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1A49F2C6-BC13-4C76-A454-3B29A216F5F4}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A54849C1-C6F4-40D7-B2B4-43E0D99B4F64}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A54849C1-C6F4-40D7-B2B4-43E0D99B4F64}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A54849C1-C6F4-40D7-B2B4-43E0D99B4F64}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A54849C1-C6F4-40D7-B2B4-43E0D99B4F64}.Release|Any CPU.Build.0 = Release|Any CPU
 		{0B477CE5-1760-48B4-81B1-3A00DC80A675}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{0B477CE5-1760-48B4-81B1-3A00DC80A675}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0B477CE5-1760-48B4-81B1-3A00DC80A675}.Release|Any CPU.ActiveCfg = Release|Any CPU

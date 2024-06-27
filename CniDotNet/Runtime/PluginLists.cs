@@ -170,12 +170,12 @@ public static class PluginLists
 
         if (plugin.Capabilities is not null)
         {
-            jsonNode[Constants.Parsing.Capabilities] = plugin.Capabilities;
+            jsonNode[Constants.Parsing.Capabilities] = plugin.Capabilities.DeepClone();
         }
 
         if (plugin.Args is not null)
         {
-            jsonNode[Constants.Parsing.Args] = plugin.Args;
+            jsonNode[Constants.Parsing.Args] = plugin.Args.DeepClone();
         }
 
         return jsonNode;

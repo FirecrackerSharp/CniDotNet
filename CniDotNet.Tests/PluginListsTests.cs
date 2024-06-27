@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using CniDotNet.Abstractions;
 using CniDotNet.Data;
 using CniDotNet.Data.Options;
@@ -42,6 +43,21 @@ public class PluginListsTests
 	    		}
 	    	]
 	    }
+	    """;
+    private static readonly PluginList SavedPluginList = new(
+	    CniVersion: "1.0.0",
+	    Name: "plugin-list",
+	    CniVersions: ["0.1.0", "0.2.0", "0.3.0", "1.0.0"],
+	    DisableCheck: true,
+	    DisableGc: true,
+	    Plugins: [new Plugin(
+		    "plugin-type",
+		    Capabilities: new JsonObject { ["a"] = "b" },
+		    Args: new JsonObject { ["c"] = "d" },
+		    new JsonObject { ["e"] = "f" })]);
+    private const string SavedPluginListJson =
+	    """
+	    {"cniVersion":"1.0.0","name":"plugin-list","cniVersions":["0.1.0","0.2.0","0.3.0","1.0.0"],"disableCheck":true,"disableGC":true,"plugins":[{"e":"f","type":"plugin-type","capabilities":{"a":"b"},"args":{"c":"d"}}]}
 	    """;
     
     [Fact]
@@ -109,6 +125,51 @@ public class PluginListsTests
 		    new PluginListSearchOptions([".conflist"], Directory: "/tmp/a"),
 		    matches => matches.Count.Should().Be(2) /* 3-1=5 (1 skipped) */,
 		    corrupt: true);
+    }
+
+    [Fact]
+    public void SaveToString_ShouldSerialize()
+    {
+	    var actualJson = PluginLists.SaveToString(SavedPluginList, prettyPrint: false);
+	    actualJson.Should().Be(SavedPluginListJson);
+    }
+
+    [Fact]
+    public async Task SaveToFileAsync_ShouldWrite()
+    {
+	    var filePath = $"/tmp/{Guid.NewGuid()}";
+	    await PluginLists.SaveToFileAsync(SavedPluginList, LocalRuntimeHost.Instance, filePath, prettyPrint: false);
+	    var fileContent = await File.ReadAllTextAsync(filePath);
+	    fileContent.Should().Be(SavedPluginListJson);
+	    File.Delete(filePath);
+    }
+
+    [Theory]
+    [InlineData(true), InlineData(false)]
+    public void LoadAndSaveRoundtrip_ShouldSucceed(bool prettyPrint)
+    {
+	    var serializedJson = PluginLists.SaveToString(SavedPluginList, prettyPrint);
+	    var deserializedPluginList = PluginLists.LoadFromString(serializedJson);
+	    var reSerializedJson = PluginLists.SaveToString(deserializedPluginList, prettyPrint);
+	    reSerializedJson.Should().Be(serializedJson);
+    }
+
+    [Theory]
+    [InlineData(true), InlineData(false)]
+    public async Task LoadAndSaveRoundtrip_ShouldSucceed_ThroughFile(bool prettyPrint)
+    {
+	    var filePath1 = $"/tmp/{Guid.NewGuid()}";
+	    var filePath2 = $"/tmp/{Guid.NewGuid()}";
+	    
+	    await PluginLists.SaveToFileAsync(SavedPluginList, LocalRuntimeHost.Instance, filePath1, prettyPrint);
+	    var deserializedPluginList = await PluginLists.LoadFromFileAsync(LocalRuntimeHost.Instance, filePath1);
+	    await PluginLists.SaveToFileAsync(deserializedPluginList, LocalRuntimeHost.Instance, filePath2, prettyPrint);
+	    var content1 = await File.ReadAllTextAsync(filePath1);
+	    var content2 = await File.ReadAllTextAsync(filePath2);
+	    content1.Should().Be(content2);
+	    
+	    File.Delete(filePath1);
+	    File.Delete(filePath2);
     }
 
     private static async Task ArrangeSearchAsync(PluginListSearchOptions pluginListSearchOptions,

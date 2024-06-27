@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace CniDotNet.Data.Results;
+namespace CniDotNet.Data.CniResults;
 
 public sealed record AddCniResultRoute(
     [property: JsonPropertyName("dst")] string Dst,

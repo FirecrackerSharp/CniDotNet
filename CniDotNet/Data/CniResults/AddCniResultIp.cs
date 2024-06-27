@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace CniDotNet.Data.Results;
+namespace CniDotNet.Data.CniResults;
 
 public sealed record AddCniResultIp(
     [property: JsonPropertyName("address")] string Address,

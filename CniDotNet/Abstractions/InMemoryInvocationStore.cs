@@ -1,6 +1,6 @@
 using CniDotNet.Data;
+using CniDotNet.Data.CniResults;
 using CniDotNet.Data.Options;
-using CniDotNet.Data.Results;
 
 namespace CniDotNet.Abstractions;
 

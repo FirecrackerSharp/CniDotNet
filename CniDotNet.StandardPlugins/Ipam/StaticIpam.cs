@@ -1,5 +1,5 @@
 using System.Text.Json.Serialization;
-using CniDotNet.Data.Results;
+using CniDotNet.Data.CniResults;
 
 namespace CniDotNet.StandardPlugins.Ipam;
 

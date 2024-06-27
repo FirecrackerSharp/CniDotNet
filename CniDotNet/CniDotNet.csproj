@@ -10,4 +10,8 @@
       <PackageReference Include="EnumExtensions.System.Text.Json" Version="1.2.0" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Data\InvocationResults\" />
+    </ItemGroup>
+
 </Project>

@@ -1,6 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using CniDotNet.Data.Results;
+using CniDotNet.Data.CniResults;
 using CniDotNet.Runtime;
 using CniDotNet.Typing;
 

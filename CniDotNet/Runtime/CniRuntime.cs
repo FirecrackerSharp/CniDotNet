@@ -4,23 +4,26 @@ using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using CniDotNet.Data;
 using CniDotNet.Data.CniResults;
+using CniDotNet.Data.Invocations;
 using CniDotNet.Data.Options;
+using CniDotNet.Runtime.Exceptions;
 
 namespace CniDotNet.Runtime;
 
 public static partial class CniRuntime
 {
-    public const PluginOptionRequirement AddRequirements = PluginOptionRequirement.ContainerId |
-                                                           PluginOptionRequirement.InterfaceName |
-                                                           PluginOptionRequirement.NetworkNamespace;
-    public const PluginOptionRequirement DeleteRequirements = PluginOptionRequirement.ContainerId |
+    private const PluginOptionRequirement AddRequirements = PluginOptionRequirement.ContainerId |
+                                                            PluginOptionRequirement.InterfaceName |
+                                                            PluginOptionRequirement.NetworkNamespace;
+    private const PluginOptionRequirement DeleteRequirements = PluginOptionRequirement.ContainerId |
                                                               PluginOptionRequirement.InterfaceName;
-    public const PluginOptionRequirement CheckRequirements = AddRequirements;
-    public const PluginOptionRequirement ProbeVersionsRequirements = 0; // none
-    public const PluginOptionRequirement VerifyReadinessRequirements = 0; // none
-    public const PluginOptionRequirement GarbageCollectRequirements = PluginOptionRequirement.Path;
+    private const PluginOptionRequirement CheckRequirements = AddRequirements;
+    private const PluginOptionRequirement ProbeVersionsRequirements = 0; // none
+    private const PluginOptionRequirement VerifyReadinessRequirements = 0; // none
+    private const PluginOptionRequirement GarbageCollectRequirements = PluginOptionRequirement.Path;
     
     private static readonly Regex CniRegex = CniRegexGenerator();
+    
     private const int MaximumInterfaceNameLength = 15;
     
     public static readonly JsonSerializerOptions SerializerOptions = new()
@@ -35,285 +38,69 @@ public static partial class CniRuntime
         Converters = { new JsonStringEnumConverterWithAttributeSupport() },
         WriteIndented = true
     };
-    
-    public static async Task<WrappedCniResult<AddCniResult>> AddPluginListAsync(
+
+    public static async Task<PluginListAddInvocation> AddPluginListAsync(
         PluginList pluginList,
         RuntimeOptions runtimeOptions,
         CancellationToken cancellationToken = default)
     {
+        if (pluginList.Plugins.Count == 0) throw new CniEmptyPluginListException();
         ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Add, AddRequirements);
-        AddCniResult? previousResult = null;
+
+        var attachments = new List<Attachment>();
+        AddCniResult? previousAddResult = null;
 
         foreach (var plugin in pluginList.Plugins)
         {
-            var wrappedResult = await AddPluginAsync(
-                plugin, runtimeOptions, previousResult, pluginList, cancellationToken);
-            previousResult = wrappedResult.SuccessValue;
-            
-            if (wrappedResult.IsError)
-            {
-                return WrappedCniResult<AddCniResult>.Error(wrappedResult.ErrorValue!);
-            }
-        }
-
-        if (runtimeOptions.InvocationStoreOptions is { StoreResults: true })
-        {
-            await runtimeOptions.InvocationStoreOptions.InvocationStore.SetResultAsync(pluginList, previousResult!,
+            var invocation = await AddPluginInternalAsync(plugin, runtimeOptions, previousAddResult, pluginList,
                 cancellationToken);
+            
+            if (invocation.IsError)
+            {
+                return PluginListAddInvocation.Error(invocation.ErrorResult!, plugin);
+            }
+            
+            attachments.Add(invocation.SuccessAttachment!);
+            previousAddResult = invocation.SuccessAddResult!;
         }
         
-        return WrappedCniResult<AddCniResult>.Success(previousResult!);
+        return PluginListAddInvocation.Success(attachments, previousAddResult!);
     }
 
-    public static async Task<ErrorCniResult?> DeletePluginListAsync(
-        PluginList pluginList,
-        RuntimeOptions runtimeOptions,
-        AddCniResult previousResult,
-        CancellationToken cancellationToken = default)
-    {
-        ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Delete, DeleteRequirements);
-        
-        for (var i = pluginList.Plugins.Count - 1; i >= 0; i--)
-        {
-            var plugin = pluginList.Plugins[i];
-            var errorCniResult = await DeletePluginAsync(
-                plugin, runtimeOptions, previousResult, pluginList, cancellationToken);
-            if (errorCniResult is not null) return errorCniResult;
-        }
-
-        if (runtimeOptions.InvocationStoreOptions is { StoreResults: true })
-        {
-            await runtimeOptions.InvocationStoreOptions.InvocationStore.RemoveResultAsync(pluginList, cancellationToken);
-        }
-
-        return null;
-    }
-
-    public static async Task<ErrorCniResult?> DeletePluginListWithStoreAsync(
-        PluginList pluginList,
-        RuntimeOptions runtimeOptions,
-        CancellationToken cancellationToken = default)
-    {
-        return await DeletePluginListAsync(
-            pluginList,
-            runtimeOptions,
-            await GetStoredResultAsync(pluginList, runtimeOptions, cancellationToken),
-            cancellationToken);
-    }
-
-    public static async Task<ErrorCniResult?> CheckPluginListAsync(
-        PluginList pluginList,
-        RuntimeOptions runtimeOptions,
-        AddCniResult previousResult,
-        CancellationToken cancellationToken = default)
-    {
-        if (pluginList.DisableCheck) return null;
-        ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Check, CheckRequirements);
-        
-        foreach (var plugin in pluginList.Plugins)
-        {
-            var errorCniResult = await CheckPluginAsync(plugin, runtimeOptions, previousResult, pluginList, cancellationToken);
-            if (errorCniResult is not null) return errorCniResult;
-        }
-
-        return null;
-    }
-
-    public static async Task<ErrorCniResult?> CheckPluginListWithStoreAsync(
-        PluginList pluginList,
-        RuntimeOptions runtimeOptions,
-        CancellationToken cancellationToken = default)
-    {
-        return await CheckPluginListAsync(
-            pluginList,
-            runtimeOptions,
-            await GetStoredResultAsync(pluginList, runtimeOptions, cancellationToken),
-            cancellationToken);
-    }
-
-    public static async Task<ErrorCniResult?> VerifyPluginListReadinessAsync(
-        PluginList pluginList,
-        RuntimeOptions runtimeOptions,
-        CancellationToken cancellationToken = default)
-    {
-        ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.VerifyReadiness, VerifyReadinessRequirements);
-        
-        foreach (var plugin in pluginList.Plugins)
-        {
-            var errorCniResult = await VerifyPluginReadinessAsync(plugin, runtimeOptions, pluginList, cancellationToken);
-            if (errorCniResult is not null) return errorCniResult;
-        }
-
-        return null;
-    }
-
-    public static async Task<ErrorCniResult?> GarbageCollectPluginListAsync(
-        PluginList pluginList,
-        RuntimeOptions runtimeOptions,
-        IReadOnlyList<Attachment> gcAttachments,
-        CancellationToken cancellationToken = default)
-    {
-        ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.GarbageCollect, GarbageCollectRequirements);
-
-        foreach (var plugin in pluginList.Plugins)
-        {
-            var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
-            var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.GarbageCollect,
-                pluginBinary, previousResult: null, gcAttachments, cancellationToken);
-            var errorCniResult = WrapPotentialErrorCniResult(resultJson);
-
-            if (errorCniResult is not null) return errorCniResult;
-        }
-
-        return null;
-    }
-
-    public static async Task<ErrorCniResult?> GarbageCollectPluginListWithStoreAsync(
-        PluginList pluginList,
-        RuntimeOptions runtimeOptions,
-        CancellationToken cancellationToken = default)
-    {
-        if (runtimeOptions.InvocationStoreOptions is not { StoreAttachments: true })
-        {
-            throw new ItemNotRetrievedFromStoreException("Store hasn't been configured for storing attachments, yet an attachment is needed");
-        }
-
-        var gcAttachments = await runtimeOptions.InvocationStoreOptions.InvocationStore
-            .GetAllAttachmentsForPluginListAsync(pluginList, cancellationToken);
-        return await GarbageCollectPluginListAsync(pluginList, runtimeOptions, gcAttachments, cancellationToken);
-    }
-
-    public static async Task<WrappedCniResult<AddCniResult>> AddPluginAsync(
+    public static Task<PluginAddInvocation> AddPluginAsync(
         Plugin plugin,
         RuntimeOptions runtimeOptions,
-        AddCniResult? previousResult = null,
+        CancellationToken cancellationToken = default) =>
+        AddPluginInternalAsync(plugin, runtimeOptions, previousAddResult: null, pluginList: null, cancellationToken);
+    
+    private static async Task<PluginAddInvocation> AddPluginInternalAsync(
+        Plugin plugin,
+        RuntimeOptions runtimeOptions,
+        AddCniResult? previousAddResult = null,
         PluginList? pluginList = null,
         CancellationToken cancellationToken = default)
     {
-        if (pluginList is null)
+        var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
+        var resultJson = await InvokeAsync(plugin, runtimeOptions, Constants.Operations.Add, pluginBinary,
+            previousAddResult, gcAttachments: null, cancellationToken);
+
+        if (resultJson.Contains("\"code\": "))
         {
-            ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Add, AddRequirements);
+            var errorResult = JsonSerializer.Deserialize<ErrorCniResult>(resultJson, SerializerOptions);
+            return PluginAddInvocation.Error(errorResult!);
         }
 
-        var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
-        var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Add,
-            pluginBinary, previousResult, gcAttachments: null, cancellationToken);
-
-        var wrappedResult = WrapCniResult<AddCniResult>(resultJson);
-        if (wrappedResult.IsError) return wrappedResult;
-        
+        var addResult = JsonSerializer.Deserialize<AddCniResult>(resultJson, SerializerOptions)!;
         var attachment = new Attachment(runtimeOptions.PluginOptions, plugin, pluginList);
-        wrappedResult.Attachment = attachment;
+
         if (runtimeOptions.InvocationStoreOptions is { StoreAttachments: true })
         {
             await runtimeOptions.InvocationStoreOptions.InvocationStore.AddAttachmentAsync(attachment, cancellationToken);
         }
         
-        return wrappedResult;
-    }
-    
-    public static async Task<ErrorCniResult?> DeletePluginAsync(
-        Plugin plugin,
-        RuntimeOptions runtimeOptions,
-        AddCniResult? previousResult = null,
-        PluginList? pluginList = null,
-        CancellationToken cancellationToken = default)
-    {
-        if (pluginList is null)
-        {
-            ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Delete, DeleteRequirements);
-        }
-
-        var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
-        var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Delete,
-            pluginBinary, previousResult, gcAttachments: null, cancellationToken);
-        
-        var errorResult = WrapPotentialErrorCniResult(resultJson);
-
-        // if deleted successfully, remove stored attachment
-        if (errorResult is null && runtimeOptions.InvocationStoreOptions is { StoreAttachments: true })
-        {
-            await runtimeOptions.InvocationStoreOptions.InvocationStore.RemoveAttachmentAsync(
-                plugin, runtimeOptions.PluginOptions, cancellationToken);
-        }
-
-        return errorResult;
+        return PluginAddInvocation.Success(attachment, addResult);
     }
 
-    public static async Task<ErrorCniResult?> CheckPluginAsync(
-        Plugin plugin,
-        RuntimeOptions runtimeOptions,
-        AddCniResult previousResult,
-        PluginList? pluginList = null,
-        CancellationToken cancellationToken = default)
-    {
-        if (pluginList is null)
-        {
-            ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Check, CheckRequirements);
-        }
-
-        var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
-        var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.Check,
-            pluginBinary, previousResult, gcAttachments: null, cancellationToken);
-        
-        return WrapPotentialErrorCniResult(resultJson);
-    }
-
-    public static async Task<ErrorCniResult?> VerifyPluginReadinessAsync(
-        Plugin plugin,
-        RuntimeOptions runtimeOptions,
-        PluginList? pluginList = null,
-        CancellationToken cancellationToken = default)
-    {
-        if (pluginList is null)
-        {
-            ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.VerifyReadiness,
-                VerifyReadinessRequirements);
-        }
-
-        var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
-        var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.VerifyReadiness,
-            pluginBinary, previousResult: null, gcAttachments: null, cancellationToken);
-        return WrapPotentialErrorCniResult(resultJson);
-    }
-    
-    public static async Task<WrappedCniResult<VersionCniResult>> ProbePluginVersionsAsync(
-        Plugin plugin,
-        RuntimeOptions runtimeOptions,
-        PluginList? pluginList = null,
-        CancellationToken cancellationToken = default)
-    {
-        if (pluginList is null)
-        {
-            ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.ProbeVersions,
-                ProbeVersionsRequirements);
-        }
-
-        var pluginBinary = await SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
-        var resultJson = await InvokeAsync(plugin, runtimeOptions, operation: Constants.Operations.ProbeVersions,
-            pluginBinary, previousResult: null, gcAttachments: null, cancellationToken);
-        return WrapCniResult<VersionCniResult>(resultJson);
-    }
-
-    private static WrappedCniResult<T> WrapCniResult<T>(string resultJson) where T : class
-    {
-        if (resultJson.Contains("\"code\": "))
-        {
-            var errorValue = JsonSerializer.Deserialize<ErrorCniResult>(resultJson);
-            return WrappedCniResult<T>.Error(errorValue!);
-        }
-
-        var successValue = JsonSerializer.Deserialize<T>(resultJson);
-        return WrappedCniResult<T>.Success(successValue!, resultJson);
-    }
-
-    private static ErrorCniResult? WrapPotentialErrorCniResult(string resultJson)
-    {
-        return string.IsNullOrWhiteSpace(resultJson)
-            ? null
-            : JsonSerializer.Deserialize<ErrorCniResult>(resultJson);
-    }
-    
     private static async Task<AddCniResult> GetStoredResultAsync(
         PluginList pluginList,
         RuntimeOptions runtimeOptions,
@@ -321,7 +108,7 @@ public static partial class CniRuntime
     {
         if (runtimeOptions.InvocationStoreOptions is not { StoreResults: true })
         {
-            throw new ItemNotRetrievedFromStoreException(
+            throw new CniStoreRetrievalException(
                 "Store hasn't been configured for storing results, and yet a result is being requested");
         }
 
@@ -329,7 +116,7 @@ public static partial class CniRuntime
             cancellationToken);
         if (previousResult is null)
         {
-            throw new ItemNotRetrievedFromStoreException(
+            throw new CniStoreRetrievalException(
                 $"No result has been stored for given plugin list (hash code {pluginList.GetHashCode()})");
         }
 
@@ -344,61 +131,61 @@ public static partial class CniRuntime
         // path
         if (requirement.HasFlag(PluginOptionRequirement.Path) && !pluginOptions.IncludePath)
         {
-            throw new PluginOptionValidationException(
+            throw new CniValidationFailureException(
                 $"Path is required for \"{operation}\" but is excluded according to IncludePath=false");
         }
         
         // network namespace
         if (requirement.HasFlag(PluginOptionRequirement.NetworkNamespace) && string.IsNullOrWhiteSpace(pluginOptions.NetworkNamespace))
         {
-            throw new PluginOptionValidationException(
+            throw new CniValidationFailureException(
                 $"Network namespace is required for \"{operation}\" but isn't provided");
         }
         
         // network name
         if (string.IsNullOrWhiteSpace(pluginOptions.Name))
         {
-            throw new PluginOptionValidationException("Network name is required for any operation but is missing");
+            throw new CniValidationFailureException("Network name is required for any operation but is missing");
         }
 
         if (!CniRegex.IsMatch(pluginOptions.Name))
         {
-            throw new PluginOptionValidationException($"Network name \"{pluginOptions.Name}\" doesn't match regex");
+            throw new CniValidationFailureException($"Network name \"{pluginOptions.Name}\" doesn't match regex");
         }
         
         // container ID
         if (requirement.HasFlag(PluginOptionRequirement.ContainerId) && string.IsNullOrWhiteSpace(pluginOptions.ContainerId))
         {
-            throw new PluginOptionValidationException($"Container ID is required for \"{operation}\" but isn't provided");
+            throw new CniValidationFailureException($"Container ID is required for \"{operation}\" but isn't provided");
         }
         
         if (pluginOptions.ContainerId is not null && !CniRegex.IsMatch(pluginOptions.ContainerId))
         {
-            throw new PluginOptionValidationException($"Container ID \"{pluginOptions.ContainerId}\" doesn't match regex");
+            throw new CniValidationFailureException($"Container ID \"{pluginOptions.ContainerId}\" doesn't match regex");
         }
         
         // interface name
         if (requirement.HasFlag(PluginOptionRequirement.InterfaceName) && string.IsNullOrWhiteSpace(pluginOptions.InterfaceName))
         {
-            throw new PluginOptionValidationException($"Interface name is required for \"{operation}\" but isn't provided");
+            throw new CniValidationFailureException($"Interface name is required for \"{operation}\" but isn't provided");
         }
 
         if (pluginOptions.InterfaceName is null) return;
 
         if (pluginOptions.InterfaceName.Length > MaximumInterfaceNameLength)
         {
-            throw new PluginOptionValidationException(
+            throw new CniValidationFailureException(
                 $"Interface name \"{pluginOptions.InterfaceName}\" is longer than the maximum of {MaximumInterfaceNameLength}");
         }
 
         if (pluginOptions.InterfaceName is "." or "..")
         {
-            throw new PluginOptionValidationException("Interface name is either . or .., neither of which are allowed");
+            throw new CniValidationFailureException("Interface name is either . or .., neither of which are allowed");
         }
 
         if (pluginOptions.InterfaceName.Any(c => c is '/' or ':' || char.IsWhiteSpace(c)))
         {
-            throw new PluginOptionValidationException(
+            throw new CniValidationFailureException(
                 $"Interface name \"{pluginOptions.InterfaceName}\" contains a forbidden character (/, : or a space)");
         }
     }
@@ -421,13 +208,13 @@ public static partial class CniRuntime
                 runtimeOptions.InvocationOptions.RuntimeHost, cancellationToken);
         if (directory is null)
         {
-            throw new PluginBinaryNotFoundException($"Could not find \"{plugin.Type}\" plugin: directory wasn't specified and " +
+            throw new CniBinaryNotFoundException($"Could not find \"{plugin.Type}\" plugin: directory wasn't specified and " +
                                               $"environment variable doesn't exist");
         }
 
         if (!runtimeOptions.InvocationOptions.RuntimeHost.DirectoryExists(directory))
         {
-            throw new PluginBinaryNotFoundException($"Could not find \"{plugin.Type}\" plugin: \"{directory}\" directory " +
+            throw new CniBinaryNotFoundException($"Could not find \"{plugin.Type}\" plugin: \"{directory}\" directory " +
                                               $"doesn't exist");
         }
 
@@ -437,7 +224,7 @@ public static partial class CniRuntime
         var missLocation = matchingFiles.FirstOrDefault();
         if (missLocation is null)
         {
-            throw new PluginBinaryNotFoundException(
+            throw new CniBinaryNotFoundException(
                 $"Could not find \"{plugin.Type}\" plugin: the file doesn't exist according to the given search option" +
                 $"in the \"{directory}\" directory");
         }

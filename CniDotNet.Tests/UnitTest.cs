@@ -44,7 +44,6 @@ public class UnitTest
             new PluginSearchOptions(Directory: "/root/plugins"),
             new InvocationStoreOptions(InMemoryInvocationStore.Instance));
 
-        var w = await CniRuntime.AddPluginListAsync(pluginList, runtimeOptions);
-        var q = await CniRuntime.DeletePluginListWithStoreAsync(pluginList, runtimeOptions);
+        var i = await CniRuntime.AddPluginListAsync(pluginList, runtimeOptions);
     }
 }

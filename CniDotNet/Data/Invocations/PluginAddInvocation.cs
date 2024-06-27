@@ -2,7 +2,7 @@ using CniDotNet.Data.CniResults;
 
 namespace CniDotNet.Data.Invocations;
 
-public sealed class PluginAddInvocation
+public sealed class PluginAddInvocation : IBaseInvocation
 {
     public bool IsError { get; }
     public ErrorCniResult? ErrorResult { get; }

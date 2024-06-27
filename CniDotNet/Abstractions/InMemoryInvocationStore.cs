@@ -14,60 +14,60 @@ public sealed class InMemoryInvocationStore : IInvocationStore
     
     private InMemoryInvocationStore() {}
     
-    public Task SetBinaryLocationAsync(string pluginType, string binaryLocation)
+    public Task SetBinaryLocationAsync(string pluginType, string binaryLocation, CancellationToken cancellationToken)
     {
         _binaryLocationEntries[pluginType] = binaryLocation;
         return Task.CompletedTask;
     }
 
-    public Task<string?> GetBinaryLocationAsync(string pluginType)
+    public Task<string?> GetBinaryLocationAsync(string pluginType, CancellationToken cancellationToken)
     {
         return Task.FromResult<string?>(
             _binaryLocationEntries.FirstOrDefault(x => x.Key == pluginType).Value);
     }
 
-    public Task AddAttachmentAsync(Attachment attachment)
+    public Task AddAttachmentAsync(Attachment attachment, CancellationToken cancellationToken)
     {
         _attachmentEntries.Add(attachment);
         return Task.CompletedTask;
     }
 
-    public Task RemoveAttachmentAsync(Plugin plugin, PluginOptions pluginOptions)
+    public Task RemoveAttachmentAsync(Plugin plugin, PluginOptions pluginOptions, CancellationToken cancellationToken)
     {
         _attachmentEntries.RemoveWhere(a => a.Plugin == plugin && a.PluginOptions == pluginOptions);
         return Task.CompletedTask;
     }
 
-    public Task<Attachment?> GetAttachmentAsync(Plugin plugin, PluginOptions pluginOptions)
+    public Task<Attachment?> GetAttachmentAsync(Plugin plugin, PluginOptions pluginOptions, CancellationToken cancellationToken)
     {
         return Task.FromResult(
             _attachmentEntries.FirstOrDefault(a => a.Plugin == plugin && a.PluginOptions == pluginOptions));
     }
 
-    public Task<IReadOnlyList<Attachment>> GetAllAttachmentsForPluginAsync(Plugin plugin)
+    public Task<IReadOnlyList<Attachment>> GetAllAttachmentsForPluginAsync(Plugin plugin, CancellationToken cancellationToken)
     {
         return Task.FromResult<IReadOnlyList<Attachment>>(
             _attachmentEntries.Where(a => a.Plugin == plugin).ToList());
     }
 
-    public Task<IReadOnlyList<Attachment>> GetAllAttachmentsForPluginListAsync(PluginList pluginList)
+    public Task<IReadOnlyList<Attachment>> GetAllAttachmentsForPluginListAsync(PluginList pluginList, CancellationToken cancellationToken)
     {
         return Task.FromResult<IReadOnlyList<Attachment>>(
             _attachmentEntries.Where(a => a.ParentPluginList == pluginList).ToList());
     }
 
-    public Task SetResultAsync(PluginList pluginList, AddCniResult result)
+    public Task SetResultAsync(PluginList pluginList, AddCniResult result, CancellationToken cancellationToken)
     {
         _resultEntries[pluginList] = result;
         return Task.CompletedTask;
     }
 
-    public Task<AddCniResult?> GetResultAsync(PluginList pluginList)
+    public Task<AddCniResult?> GetResultAsync(PluginList pluginList, CancellationToken cancellationToken)
     {
         return Task.FromResult(_resultEntries.GetValueOrDefault(pluginList));
     }
 
-    public Task RemoveResultAsync(PluginList pluginList)
+    public Task RemoveResultAsync(PluginList pluginList, CancellationToken cancellationToken)
     {
         _resultEntries.Remove(pluginList);
         return Task.CompletedTask;

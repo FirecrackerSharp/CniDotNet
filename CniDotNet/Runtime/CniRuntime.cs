@@ -58,7 +58,8 @@ public static partial class CniRuntime
 
         if (runtimeOptions.InvocationStoreOptions is { StoreResults: true })
         {
-            await runtimeOptions.InvocationStoreOptions.InvocationStore.SetResultAsync(pluginList, previousResult!);
+            await runtimeOptions.InvocationStoreOptions.InvocationStore.SetResultAsync(pluginList, previousResult!,
+                cancellationToken);
         }
         
         return WrappedCniResult<AddCniResult>.Success(previousResult!);
@@ -82,7 +83,7 @@ public static partial class CniRuntime
 
         if (runtimeOptions.InvocationStoreOptions is { StoreResults: true })
         {
-            await runtimeOptions.InvocationStoreOptions.InvocationStore.RemoveResultAsync(pluginList);
+            await runtimeOptions.InvocationStoreOptions.InvocationStore.RemoveResultAsync(pluginList, cancellationToken);
         }
 
         return null;
@@ -177,8 +178,8 @@ public static partial class CniRuntime
             throw new ItemNotRetrievedFromStoreException("Store hasn't been configured for storing attachments, yet an attachment is needed");
         }
 
-        var gcAttachments =
-            await runtimeOptions.InvocationStoreOptions.InvocationStore.GetAllAttachmentsForPluginListAsync(pluginList);
+        var gcAttachments = await runtimeOptions.InvocationStoreOptions.InvocationStore
+            .GetAllAttachmentsForPluginListAsync(pluginList, cancellationToken);
         return await GarbageCollectPluginListAsync(pluginList, runtimeOptions, gcAttachments, cancellationToken);
     }
 
@@ -205,7 +206,7 @@ public static partial class CniRuntime
         wrappedResult.Attachment = attachment;
         if (runtimeOptions.InvocationStoreOptions is { StoreAttachments: true })
         {
-            await runtimeOptions.InvocationStoreOptions.InvocationStore.AddAttachmentAsync(attachment);
+            await runtimeOptions.InvocationStoreOptions.InvocationStore.AddAttachmentAsync(attachment, cancellationToken);
         }
         
         return wrappedResult;
@@ -233,7 +234,7 @@ public static partial class CniRuntime
         if (errorResult is null && runtimeOptions.InvocationStoreOptions is { StoreAttachments: true })
         {
             await runtimeOptions.InvocationStoreOptions.InvocationStore.RemoveAttachmentAsync(
-                plugin, runtimeOptions.PluginOptions);
+                plugin, runtimeOptions.PluginOptions, cancellationToken);
         }
 
         return errorResult;
@@ -324,7 +325,8 @@ public static partial class CniRuntime
                 "Store hasn't been configured for storing results, and yet a result is being requested");
         }
 
-        var previousResult = await runtimeOptions.InvocationStoreOptions.InvocationStore.GetResultAsync(pluginList);
+        var previousResult = await runtimeOptions.InvocationStoreOptions.InvocationStore.GetResultAsync(pluginList,
+            cancellationToken);
         if (previousResult is null)
         {
             throw new ItemNotRetrievedFromStoreException(
@@ -408,7 +410,7 @@ public static partial class CniRuntime
         if (usesCache)
         {
             var hitLocation = await runtimeOptions.InvocationStoreOptions!.InvocationStore
-                .GetBinaryLocationAsync(plugin.Type);
+                .GetBinaryLocationAsync(plugin.Type, cancellationToken);
             if (hitLocation is not null) return hitLocation;
         }
         
@@ -443,7 +445,7 @@ public static partial class CniRuntime
         if (usesCache)
         {
             await runtimeOptions.InvocationStoreOptions!.InvocationStore.SetBinaryLocationAsync(
-                plugin.Type, missLocation);
+                plugin.Type, missLocation, cancellationToken);
         }
 
         return missLocation;

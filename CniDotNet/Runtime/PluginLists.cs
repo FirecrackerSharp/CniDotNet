@@ -25,7 +25,7 @@ public static class PluginLists
         if (!runtimeHost.DirectoryExists(directory)) return [];
 
         var files = await runtimeHost
-            .EnumerateDirectoryAsync(directory, pluginListSearchOptions.SearchQuery ?? "",
+            .EnumerateDirectoryAsync(directory, "",
                 pluginListSearchOptions.DirectorySearchOption, cancellationToken);
 
         var pluginLists = new List<PluginList>();

@@ -47,12 +47,8 @@ public class UnitTest
 
         await NetworkNamespaces.AddAsync(new NetworkNamespace("testing", 5), runtimeOptions.InvocationOptions);
         var i = await CniRuntime.AddPluginListAsync(pluginList, runtimeOptions);
-
-        var storedResult = await CniRuntime.GetStoredResultAsync(pluginList, runtimeOptions);
-        var storedAttachments = await CniRuntime.GetStoredAttachmentsAsync(pluginList, runtimeOptions);
-        var storedLocation = await CniRuntime.GetStoredBinaryLocationAsync("tc-redirect-tap", runtimeOptions);
+        var k = await CniRuntime.GarbageCollectWithStoreAsync([pluginList], runtimeOptions);
         
         var j = await CniRuntime.DeletePluginListWithStoredResultAsync(pluginList, runtimeOptions);
-        var k = await CniRuntime.VersionPluginListAsync(pluginList, runtimeOptions);
     }
 }

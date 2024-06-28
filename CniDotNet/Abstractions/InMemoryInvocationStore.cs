@@ -44,16 +44,21 @@ public sealed class InMemoryInvocationStore : IInvocationStore
             _attachmentEntries.FirstOrDefault(a => a.Plugin == plugin && a.PluginOptions == pluginOptions));
     }
 
-    public Task<IReadOnlyList<Attachment>> GetAllAttachmentsForPluginAsync(Plugin plugin, CancellationToken cancellationToken)
+    public Task<IEnumerable<Attachment>> GetAllAttachmentsAsync(CancellationToken cancellationToken)
     {
-        return Task.FromResult<IReadOnlyList<Attachment>>(
-            _attachmentEntries.Where(a => a.Plugin == plugin).ToList());
+        return Task.FromResult(_attachmentEntries.AsEnumerable());
     }
 
-    public Task<IReadOnlyList<Attachment>> GetAllAttachmentsForPluginListAsync(PluginList pluginList, CancellationToken cancellationToken)
+    public Task<IEnumerable<Attachment>> GetAllAttachmentsForPluginAsync(Plugin plugin, CancellationToken cancellationToken)
     {
-        return Task.FromResult<IReadOnlyList<Attachment>>(
-            _attachmentEntries.Where(a => a.ParentPluginList == pluginList).ToList());
+        return Task.FromResult(
+            _attachmentEntries.Where(a => a.Plugin == plugin));
+    }
+
+    public Task<IEnumerable<Attachment>> GetAllAttachmentsForPluginListAsync(PluginList pluginList, CancellationToken cancellationToken)
+    {
+        return Task.FromResult(
+            _attachmentEntries.Where(a => a.ParentPluginList == pluginList));
     }
 
     public Task SetResultAsync(PluginList pluginList, AddCniResult result, CancellationToken cancellationToken)

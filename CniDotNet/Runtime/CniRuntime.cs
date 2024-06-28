@@ -146,6 +146,61 @@ public static class CniRuntime
         return PluginListVersionInvocation.Success(versionResults);
     }
 
+    public static Task<PluginListInvocation> GarbageCollectAsync(
+        IEnumerable<Plugin> plugins,
+        IEnumerable<Attachment> validAttachments,
+        RuntimeOptions runtimeOptions,
+        CancellationToken cancellationToken = default) =>
+        GarbageCollectInternalAsync(plugins, runtimeOptions, validAttachments, cancellationToken);
+
+    public static Task<PluginListInvocation> GarbageCollectAsync(
+        PluginList pluginList,
+        IEnumerable<Attachment> validAttachments,
+        RuntimeOptions runtimeOptions,
+        CancellationToken cancellationToken = default) =>
+        GarbageCollectInternalAsync(pluginList.Plugins, runtimeOptions, validAttachments, cancellationToken);
+
+    public static async Task<PluginListInvocation> GarbageCollectAsync(
+        IEnumerable<PluginList> pluginLists,
+        IEnumerable<Attachment> validAttachments,
+        RuntimeOptions runtimeOptions,
+        CancellationToken cancellationToken = default)
+    {
+        var plugins = pluginLists.SelectMany(l => l.Plugins).DistinctBy(p => p.Type);
+        return await GarbageCollectInternalAsync(plugins, runtimeOptions, validAttachments, cancellationToken);
+    }
+
+    public static async Task<PluginListInvocation> GarbageCollectWithStoreAsync(
+        IEnumerable<Plugin> plugins,
+        RuntimeOptions runtimeOptions,
+        CancellationToken cancellationToken = default)
+    {
+        var attachments = await GetAllStoredAttachmentsAsync(runtimeOptions, cancellationToken)
+                          ?? throw new CniStoreRetrievalException("Could not get stored attachments");
+        return await GarbageCollectInternalAsync(plugins, runtimeOptions, attachments, cancellationToken);
+    }
+
+    public static async Task<PluginListInvocation> GarbageCollectWithStoreAsync(
+        PluginList pluginList,
+        RuntimeOptions runtimeOptions,
+        CancellationToken cancellationToken = default)
+    {
+        var attachments = await GetAllStoredAttachmentsAsync(runtimeOptions, cancellationToken)
+                          ?? throw new CniStoreRetrievalException("Could not get stored attachments");
+        return await GarbageCollectInternalAsync(pluginList.Plugins, runtimeOptions, attachments, cancellationToken);
+    }
+
+    public static async Task<PluginListInvocation> GarbageCollectWithStoreAsync(
+        IEnumerable<PluginList> pluginLists,
+        RuntimeOptions runtimeOptions,
+        CancellationToken cancellationToken = default)
+    {
+        var plugins = pluginLists.SelectMany(l => l.Plugins).DistinctBy(p => p.Type);
+        var attachments = await GetAllStoredAttachmentsAsync(runtimeOptions, cancellationToken)
+                          ?? throw new CniStoreRetrievalException("Could not get stored attachments");
+        return await GarbageCollectInternalAsync(plugins, runtimeOptions, attachments, cancellationToken);
+    }
+
     public static async Task<PluginAddInvocation> AddPluginAsync(
         Plugin plugin,
         RuntimeOptions runtimeOptions,
@@ -187,6 +242,82 @@ public static class CniRuntime
         CniBackend.ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Version, VersionRequirements);
         return await VersionPluginInternalAsync(plugin, runtimeOptions, cancellationToken);
     }
+
+    public static async Task<AddCniResult?> GetStoredResultAsync(
+        PluginList pluginList,
+        RuntimeOptions runtimeOptions,
+        CancellationToken cancellationToken = default)
+    {
+        if (runtimeOptions.InvocationStoreOptions is not { StoreResults: true }) return null;
+
+        var result = await runtimeOptions.InvocationStoreOptions.InvocationStore.GetResultAsync(pluginList, cancellationToken);
+        return result;
+    }
+
+    public static async Task<Attachment?> GetStoredAttachmentAsync(
+        Plugin plugin,
+        RuntimeOptions runtimeOptions,
+        CancellationToken cancellationToken = default)
+    {
+        if (runtimeOptions.InvocationStoreOptions is not { StoreAttachments: true }) return null;
+
+        var attachment = await runtimeOptions.InvocationStoreOptions.InvocationStore.GetAttachmentAsync(plugin,
+                runtimeOptions.PluginOptions, cancellationToken);
+        return attachment;
+    }
+
+    public static async Task<IEnumerable<Attachment>?> GetStoredAttachmentsAsync(
+        PluginList pluginList,
+        RuntimeOptions runtimeOptions,
+        CancellationToken cancellationToken = default)
+    {
+        if (runtimeOptions.InvocationStoreOptions is not { StoreAttachments: true }) return null;
+
+        var attachments = await runtimeOptions.InvocationStoreOptions.InvocationStore
+            .GetAllAttachmentsForPluginListAsync(pluginList, cancellationToken);
+        return attachments;
+    }
+
+    public static async Task<IEnumerable<Attachment>?> GetStoredAttachmentsAsync(
+        Plugin plugin,
+        RuntimeOptions runtimeOptions,
+        CancellationToken cancellationToken = default)
+    {
+        if (runtimeOptions.InvocationStoreOptions is not { StoreAttachments: true }) return null;
+
+        var attachments = await runtimeOptions.InvocationStoreOptions.InvocationStore
+            .GetAllAttachmentsForPluginAsync(plugin, cancellationToken);
+        return attachments;
+    }
+
+    public static async Task<IEnumerable<Attachment>?> GetAllStoredAttachmentsAsync(
+        RuntimeOptions runtimeOptions,
+        CancellationToken cancellationToken = default)
+    {
+        if (runtimeOptions.InvocationStoreOptions is not { StoreAttachments: true }) return null;
+
+        var attachments =
+            await runtimeOptions.InvocationStoreOptions.InvocationStore.GetAllAttachmentsAsync(cancellationToken);
+        return attachments;
+    }
+
+    public static async Task<string?> GetStoredBinaryLocationAsync(
+        string pluginType,
+        RuntimeOptions runtimeOptions,
+        CancellationToken cancellationToken = default)
+    {
+        if (runtimeOptions.InvocationStoreOptions is not { StoreBinaryLocations: true }) return null;
+
+        var binaryLocation = await runtimeOptions.InvocationStoreOptions.InvocationStore
+            .GetBinaryLocationAsync(pluginType, cancellationToken);
+        return binaryLocation;
+    }
+
+    public static Task<string?> GetStoredBinaryLocationAsync(
+        Plugin plugin,
+        RuntimeOptions runtimeOptions,
+        CancellationToken cancellationToken = default) =>
+        GetStoredBinaryLocationAsync(plugin.Type, runtimeOptions, cancellationToken);
     
     private static async Task<PluginAddInvocation> AddPluginInternalAsync(
         Plugin plugin,
@@ -197,7 +328,7 @@ public static class CniRuntime
     {
         var pluginBinary = await CniBackend.SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
         var resultJson = await CniBackend.InvokeAsync(plugin, runtimeOptions, Constants.Operations.Add, pluginBinary,
-            previousAddResult, gcAttachments: null, cancellationToken);
+            previousAddResult, validAttachments: null, cancellationToken);
 
         if (resultJson.Contains(ErrorDetector))
         {
@@ -224,7 +355,7 @@ public static class CniRuntime
     {
         var pluginBinary = await CniBackend.SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
         var resultJson = await CniBackend.InvokeAsync(plugin, runtimeOptions, Constants.Operations.Delete,
-            pluginBinary, lastAddResult, gcAttachments: null, cancellationToken);
+            pluginBinary, lastAddResult, validAttachments: null, cancellationToken);
         var invocation = MapResultJsonToPluginInvocation(resultJson);
 
         if (invocation.IsSuccess && runtimeOptions.InvocationStoreOptions is { StoreAttachments: true })
@@ -243,7 +374,7 @@ public static class CniRuntime
     {
         var pluginBinary = await CniBackend.SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
         var resultJson = await CniBackend.InvokeAsync(plugin, runtimeOptions, Constants.Operations.Version,
-            pluginBinary, addResult: null, gcAttachments: null, cancellationToken);
+            pluginBinary, addResult: null, validAttachments: null, cancellationToken);
 
         if (resultJson.Contains(ErrorDetector))
         {
@@ -255,6 +386,32 @@ public static class CniRuntime
         return PluginVersionInvocation.Success(versionResult!);
     }
 
+    private static async Task<PluginListInvocation> GarbageCollectInternalAsync(
+        IEnumerable<Plugin> plugins,
+        RuntimeOptions runtimeOptions,
+        IEnumerable<Attachment> validAttachments,
+        CancellationToken cancellationToken = default)
+    {
+        CniBackend.ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.GarbageCollect,
+            GarbageCollectRequirements);
+        
+        var enumeratedAttachments = validAttachments.ToList();
+        
+        foreach (var plugin in plugins)
+        {
+            var pluginBinary = await CniBackend.SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
+            var resultJson = await CniBackend.InvokeAsync(plugin, runtimeOptions, Constants.Operations.GarbageCollect,
+                pluginBinary, addResult: null, enumeratedAttachments, cancellationToken);
+            if (!resultJson.Contains(ErrorDetector)) continue;
+            
+            var errorResult = JsonSerializer.Deserialize<ErrorCniResult>(resultJson, SerializerOptions);
+            if (errorResult!.Message.Contains("unknown CNI_COMMAND")) continue; // plugin doesn't support GC
+            return PluginListInvocation.Error(errorResult, plugin);
+        }
+        
+        return PluginListInvocation.Success;
+    }
+
     private static PluginInvocation MapResultJsonToPluginInvocation(string resultJson)
     {
         if (!resultJson.Contains(ErrorDetector)) return PluginInvocation.Success;
@@ -262,69 +419,4 @@ public static class CniRuntime
         var errorResult = JsonSerializer.Deserialize<ErrorCniResult>(resultJson, SerializerOptions)!;
         return PluginInvocation.Error(errorResult);
     }
-
-    public static async Task<AddCniResult?> GetStoredResultAsync(
-        PluginList pluginList,
-        RuntimeOptions runtimeOptions,
-        CancellationToken cancellationToken = default)
-    {
-        if (runtimeOptions.InvocationStoreOptions is not { StoreResults: true }) return null;
-
-        var result = await runtimeOptions.InvocationStoreOptions.InvocationStore.GetResultAsync(pluginList, cancellationToken);
-        return result;
-    }
-
-    public static async Task<Attachment?> GetStoredAttachmentAsync(
-        Plugin plugin,
-        RuntimeOptions runtimeOptions,
-        CancellationToken cancellationToken = default)
-    {
-        if (runtimeOptions.InvocationStoreOptions is not { StoreAttachments: true }) return null;
-
-        var attachment = await runtimeOptions.InvocationStoreOptions.InvocationStore.GetAttachmentAsync(plugin,
-                runtimeOptions.PluginOptions, cancellationToken);
-        return attachment;
-    }
-
-    public static async Task<IReadOnlyList<Attachment>?> GetStoredAttachmentsAsync(
-        PluginList pluginList,
-        RuntimeOptions runtimeOptions,
-        CancellationToken cancellationToken = default)
-    {
-        if (runtimeOptions.InvocationStoreOptions is not { StoreAttachments: true }) return null;
-
-        var attachments = await runtimeOptions.InvocationStoreOptions.InvocationStore
-            .GetAllAttachmentsForPluginListAsync(pluginList, cancellationToken);
-        return attachments;
-    }
-
-    public static async Task<IReadOnlyList<Attachment>?> GetStoredAttachmentsAsync(
-        Plugin plugin,
-        RuntimeOptions runtimeOptions,
-        CancellationToken cancellationToken = default)
-    {
-        if (runtimeOptions.InvocationStoreOptions is not { StoreAttachments: true }) return null;
-
-        var attachments = await runtimeOptions.InvocationStoreOptions.InvocationStore
-            .GetAllAttachmentsForPluginAsync(plugin, cancellationToken);
-        return attachments;
-    }
-
-    public static async Task<string?> GetStoredBinaryLocationAsync(
-        string pluginType,
-        RuntimeOptions runtimeOptions,
-        CancellationToken cancellationToken = default)
-    {
-        if (runtimeOptions.InvocationStoreOptions is not { StoreBinaryLocations: true }) return null;
-
-        var binaryLocation = await runtimeOptions.InvocationStoreOptions.InvocationStore
-            .GetBinaryLocationAsync(pluginType, cancellationToken);
-        return binaryLocation;
-    }
-
-    public static Task<string?> GetStoredBinaryLocationAsync(
-        Plugin plugin,
-        RuntimeOptions runtimeOptions,
-        CancellationToken cancellationToken = default) =>
-        GetStoredBinaryLocationAsync(plugin.Type, runtimeOptions, cancellationToken);
 }

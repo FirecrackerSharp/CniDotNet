@@ -134,10 +134,10 @@ internal static partial class CniBackend
         string operation,
         string pluginBinary,
         AddCniResult? addResult,
-        IReadOnlyList<Attachment>? gcAttachments,
+        IEnumerable<Attachment>? validAttachments,
         CancellationToken cancellationToken)
     {
-        var stdinJson = DerivePluginInput(plugin, runtimeOptions, addResult, gcAttachments);
+        var stdinJson = DerivePluginInput(plugin, runtimeOptions, addResult, validAttachments);
         
         var environment = new Dictionary<string, string> { { Constants.Environment.Command, operation } };
         if (runtimeOptions.PluginOptions.ContainerId is not null)
@@ -164,7 +164,7 @@ internal static partial class CniBackend
     }
 
     private static string DerivePluginInput(Plugin plugin, RuntimeOptions runtimeOptions, AddCniResult? previousResult,
-        IReadOnlyList<Attachment>? gcAttachments)
+        IEnumerable<Attachment>? validAttachments)
     {
         var jsonNode = plugin.PluginParameters.DeepClone();
         
@@ -202,11 +202,11 @@ internal static partial class CniBackend
                 .SerializeToNode(previousResult, CniRuntime.SerializerOptions)!.AsObject();
         }
 
-        if (gcAttachments is not null)
+        if (validAttachments is not null)
         {
             var jsonArray = new JsonArray();
 
-            foreach (var gcAttachment in gcAttachments)
+            foreach (var gcAttachment in validAttachments)
             {
                 jsonArray.Add(new JsonObject
                 {

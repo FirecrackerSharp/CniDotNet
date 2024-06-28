@@ -16,9 +16,11 @@ public interface IInvocationStore
     
     Task<Attachment?> GetAttachmentAsync(Plugin plugin, PluginOptions pluginOptions, CancellationToken cancellationToken);
 
-    Task<IReadOnlyList<Attachment>> GetAllAttachmentsForPluginAsync(Plugin plugin, CancellationToken cancellationToken);
+    Task<IEnumerable<Attachment>> GetAllAttachmentsAsync(CancellationToken cancellationToken);
 
-    Task<IReadOnlyList<Attachment>> GetAllAttachmentsForPluginListAsync(PluginList pluginList, CancellationToken cancellationToken);
+    Task<IEnumerable<Attachment>> GetAllAttachmentsForPluginAsync(Plugin plugin, CancellationToken cancellationToken);
+
+    Task<IEnumerable<Attachment>> GetAllAttachmentsForPluginListAsync(PluginList pluginList, CancellationToken cancellationToken);
 
     Task SetResultAsync(PluginList pluginList, AddCniResult result, CancellationToken cancellationToken);
 

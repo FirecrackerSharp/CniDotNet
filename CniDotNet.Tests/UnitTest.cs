@@ -49,6 +49,7 @@ public class UnitTest
         var i = await CniRuntime.AddPluginListAsync(pluginList, runtimeOptions);
 
         var check = await CniRuntime.CheckPluginListWithStoredResultAsync(pluginList, runtimeOptions);
+        var status = await CniRuntime.StatusPluginListAsync(pluginList, runtimeOptions);
         
         var j = await CniRuntime.DeletePluginListWithStoredResultAsync(pluginList, runtimeOptions);
     }

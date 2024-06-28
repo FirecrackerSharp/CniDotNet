@@ -185,6 +185,25 @@ public static class CniRuntime
             cancellationToken);
     }
 
+    public static async Task<PluginListInvocation> StatusPluginListAsync(
+        PluginList pluginList,
+        RuntimeOptions runtimeOptions,
+        CancellationToken cancellationToken = default)
+    {
+        CniBackend.ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Status, StatusRequirements);
+
+        foreach (var plugin in pluginList.Plugins)
+        {
+            var invocation = await StatusPluginInternalAsync(plugin, runtimeOptions, cancellationToken);
+            if (invocation.IsError)
+            {
+                return PluginListInvocation.Error(invocation.ErrorResult!, plugin);
+            }
+        }
+        
+        return PluginListInvocation.Success;
+    }
+
     public static Task<PluginListInvocation> GarbageCollectAsync(
         IEnumerable<Plugin> plugins,
         IEnumerable<Attachment> validAttachments,
@@ -296,6 +315,15 @@ public static class CniRuntime
     {
         ThrowIfErrorInvocation(pluginAddInvocation);
         return await CheckPluginAsync(plugin, runtimeOptions, pluginAddInvocation.SuccessAddResult!, cancellationToken);
+    }
+
+    public static async Task<PluginInvocation> StatusPluginAsync(
+        Plugin plugin,
+        RuntimeOptions runtimeOptions,
+        CancellationToken cancellationToken = default)
+    {
+        CniBackend.ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Status, StatusRequirements);
+        return await StatusPluginInternalAsync(plugin, runtimeOptions, cancellationToken);
     }
 
     public static async Task<CniAddResult?> GetStoredResultAsync(
@@ -453,6 +481,25 @@ public static class CniRuntime
         return MapResultJsonToPluginInvocation(resultJson);
     }
 
+    private static async Task<PluginInvocation> StatusPluginInternalAsync(
+        Plugin plugin,
+        RuntimeOptions runtimeOptions,
+        CancellationToken cancellationToken = default)
+    {
+        var pluginBinary = await CniBackend.SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
+        var resultJson = await CniBackend.InvokeAsync(plugin, runtimeOptions, Constants.Operations.Status,
+            pluginBinary, addResult: null, validAttachments: null, cancellationToken);
+        var invocation = MapResultJsonToPluginInvocation(resultJson);
+
+        if (invocation.IsError && invocation.ErrorResult!.Error == WellKnownError.InvalidNecessaryEnvironmentVariables)
+        {
+            // intercept errors caused by STATUS operation not being supported
+            return PluginInvocation.Success;
+        }
+
+        return invocation;
+    }
+
     private static async Task<PluginListInvocation> GarbageCollectInternalAsync(
         IEnumerable<Plugin> plugins,
         RuntimeOptions runtimeOptions,
@@ -472,7 +519,11 @@ public static class CniRuntime
             if (!resultJson.Contains(ErrorDetector)) continue;
             
             var errorResult = JsonSerializer.Deserialize<CniErrorResult>(resultJson, SerializerOptions);
-            if (errorResult!.Message.Contains("unknown CNI_COMMAND")) continue; // plugin doesn't support GC
+            if (errorResult!.Error == WellKnownError.InvalidNecessaryEnvironmentVariables)
+            {
+                // intercept errors caused by GC operation not being supported
+                continue;
+            }
             return PluginListInvocation.Error(errorResult, plugin);
         }
         

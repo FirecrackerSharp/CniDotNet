@@ -118,7 +118,8 @@ public static class CniRuntime
         return await DeletePluginListAsync(
             pluginList,
             runtimeOptions,
-            await GetStoredResultAsync(pluginList, runtimeOptions, cancellationToken),
+            await GetStoredResultAsync(pluginList, runtimeOptions, cancellationToken)
+                ?? throw new CniStoreRetrievalException("Could not retrieve stored result"),
             cancellationToken);
     }
 
@@ -262,25 +263,68 @@ public static class CniRuntime
         return PluginInvocation.Error(errorResult);
     }
 
-    private static async Task<AddCniResult> GetStoredResultAsync(
+    public static async Task<AddCniResult?> GetStoredResultAsync(
         PluginList pluginList,
         RuntimeOptions runtimeOptions,
         CancellationToken cancellationToken = default)
     {
-        if (runtimeOptions.InvocationStoreOptions is not { StoreResults: true })
-        {
-            throw new CniStoreRetrievalException(
-                "Store hasn't been configured for storing results, and yet a result is being requested");
-        }
+        if (runtimeOptions.InvocationStoreOptions is not { StoreResults: true }) return null;
 
-        var previousResult = await runtimeOptions.InvocationStoreOptions.InvocationStore.GetResultAsync(pluginList,
-            cancellationToken);
-        if (previousResult is null)
-        {
-            throw new CniStoreRetrievalException(
-                $"No result has been stored for given plugin list (hash code {pluginList.GetHashCode()})");
-        }
-
-        return previousResult;
+        var result = await runtimeOptions.InvocationStoreOptions.InvocationStore.GetResultAsync(pluginList, cancellationToken);
+        return result;
     }
+
+    public static async Task<Attachment?> GetStoredAttachmentAsync(
+        Plugin plugin,
+        RuntimeOptions runtimeOptions,
+        CancellationToken cancellationToken = default)
+    {
+        if (runtimeOptions.InvocationStoreOptions is not { StoreAttachments: true }) return null;
+
+        var attachment = await runtimeOptions.InvocationStoreOptions.InvocationStore.GetAttachmentAsync(plugin,
+                runtimeOptions.PluginOptions, cancellationToken);
+        return attachment;
+    }
+
+    public static async Task<IReadOnlyList<Attachment>?> GetStoredAttachmentsAsync(
+        PluginList pluginList,
+        RuntimeOptions runtimeOptions,
+        CancellationToken cancellationToken = default)
+    {
+        if (runtimeOptions.InvocationStoreOptions is not { StoreAttachments: true }) return null;
+
+        var attachments = await runtimeOptions.InvocationStoreOptions.InvocationStore
+            .GetAllAttachmentsForPluginListAsync(pluginList, cancellationToken);
+        return attachments;
+    }
+
+    public static async Task<IReadOnlyList<Attachment>?> GetStoredAttachmentsAsync(
+        Plugin plugin,
+        RuntimeOptions runtimeOptions,
+        CancellationToken cancellationToken = default)
+    {
+        if (runtimeOptions.InvocationStoreOptions is not { StoreAttachments: true }) return null;
+
+        var attachments = await runtimeOptions.InvocationStoreOptions.InvocationStore
+            .GetAllAttachmentsForPluginAsync(plugin, cancellationToken);
+        return attachments;
+    }
+
+    public static async Task<string?> GetStoredBinaryLocationAsync(
+        string pluginType,
+        RuntimeOptions runtimeOptions,
+        CancellationToken cancellationToken = default)
+    {
+        if (runtimeOptions.InvocationStoreOptions is not { StoreBinaryLocations: true }) return null;
+
+        var binaryLocation = await runtimeOptions.InvocationStoreOptions.InvocationStore
+            .GetBinaryLocationAsync(pluginType, cancellationToken);
+        return binaryLocation;
+    }
+
+    public static Task<string?> GetStoredBinaryLocationAsync(
+        Plugin plugin,
+        RuntimeOptions runtimeOptions,
+        CancellationToken cancellationToken = default) =>
+        GetStoredBinaryLocationAsync(plugin.Type, runtimeOptions, cancellationToken);
 }

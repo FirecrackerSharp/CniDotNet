@@ -14,19 +14,19 @@ internal static partial class CniBackend
     private const int MaximumInterfaceNameLength = 15;
     
     internal static void ValidatePluginOptions(PluginOptions pluginOptions, string operation,
-        PluginOptionRequirement requirement)
+        PluginOptionRequirement requirements)
     {
         if (pluginOptions.SkipValidation) return;
         
         // path
-        if (requirement.HasFlag(PluginOptionRequirement.Path) && !pluginOptions.IncludePath)
+        if (requirements.HasFlag(PluginOptionRequirement.Path) && !pluginOptions.IncludePath)
         {
             throw new CniValidationFailureException(
                 $"Path is required for \"{operation}\" but is excluded according to IncludePath=false");
         }
         
         // network namespace
-        if (requirement.HasFlag(PluginOptionRequirement.NetworkNamespace) && string.IsNullOrWhiteSpace(pluginOptions.NetworkNamespace))
+        if (requirements.HasFlag(PluginOptionRequirement.NetworkNamespace) && string.IsNullOrWhiteSpace(pluginOptions.NetworkNamespace))
         {
             throw new CniValidationFailureException(
                 $"Network namespace is required for \"{operation}\" but isn't provided");
@@ -44,7 +44,7 @@ internal static partial class CniBackend
         }
         
         // container ID
-        if (requirement.HasFlag(PluginOptionRequirement.ContainerId) && string.IsNullOrWhiteSpace(pluginOptions.ContainerId))
+        if (requirements.HasFlag(PluginOptionRequirement.ContainerId) && string.IsNullOrWhiteSpace(pluginOptions.ContainerId))
         {
             throw new CniValidationFailureException($"Container ID is required for \"{operation}\" but isn't provided");
         }
@@ -55,7 +55,7 @@ internal static partial class CniBackend
         }
         
         // interface name
-        if (requirement.HasFlag(PluginOptionRequirement.InterfaceName) && string.IsNullOrWhiteSpace(pluginOptions.InterfaceName))
+        if (requirements.HasFlag(PluginOptionRequirement.InterfaceName) && string.IsNullOrWhiteSpace(pluginOptions.InterfaceName))
         {
             throw new CniValidationFailureException($"Interface name is required for \"{operation}\" but isn't provided");
         }

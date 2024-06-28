@@ -101,12 +101,7 @@ public static class CniRuntime
         PluginListAddInvocation pluginListAddInvocation,
         CancellationToken cancellationToken = default)
     {
-        if (pluginListAddInvocation.IsError)
-        {
-            throw new ArgumentOutOfRangeException(nameof(pluginListAddInvocation), pluginListAddInvocation,
-                "Invocation must be successful");
-        }
-
+        ThrowIfErrorInvocation(pluginListAddInvocation);
         return await DeletePluginListAsync(pluginList, runtimeOptions, pluginListAddInvocation.SuccessAddResult!, cancellationToken);
     }
 
@@ -144,6 +139,50 @@ public static class CniRuntime
         }
         
         return PluginListVersionInvocation.Success(versionResults);
+    }
+
+    public static async Task<PluginListInvocation> CheckPluginListAsync(
+        PluginList pluginList,
+        RuntimeOptions runtimeOptions,
+        CniAddResult lastAddResult,
+        CancellationToken cancellationToken = default)
+    {
+        CniBackend.ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Check, CheckRequirements);
+
+        foreach (var plugin in pluginList.Plugins)
+        {
+            var invocation = await CheckPluginInternalAsync(plugin, runtimeOptions, lastAddResult, cancellationToken);
+
+            if (invocation.IsError)
+            {
+                return PluginListInvocation.Error(invocation.ErrorResult!, plugin);
+            }
+        }
+        
+        return PluginListInvocation.Success;
+    }
+
+    public static async Task<PluginListInvocation> CheckPluginListAsync(
+        PluginList pluginList,
+        RuntimeOptions runtimeOptions,
+        PluginListAddInvocation pluginListAddInvocation,
+        CancellationToken cancellationToken = default)
+    {
+        ThrowIfErrorInvocation(pluginListAddInvocation);
+        return await CheckPluginListAsync(pluginList, runtimeOptions, pluginListAddInvocation.SuccessAddResult!, cancellationToken);
+    }
+
+    public static async Task<PluginListInvocation> CheckPluginListWithStoredResultAsync(
+        PluginList pluginList,
+        RuntimeOptions runtimeOptions,
+        CancellationToken cancellationToken = default)
+    {
+        return await CheckPluginListAsync(
+            pluginList,
+            runtimeOptions,
+            await GetStoredResultAsync(pluginList, runtimeOptions, cancellationToken)
+                ?? throw new CniStoreRetrievalException("Could not retrieve stored result"),
+            cancellationToken);
     }
 
     public static Task<PluginListInvocation> GarbageCollectAsync(
@@ -226,11 +265,7 @@ public static class CniRuntime
         PluginAddInvocation pluginAddInvocation,
         CancellationToken cancellationToken = default)
     {
-        if (pluginAddInvocation.IsError)
-        {
-            throw new ArgumentOutOfRangeException(nameof(pluginAddInvocation), pluginAddInvocation, "Invocation must be successful");
-        }
-        
+        ThrowIfErrorInvocation(pluginAddInvocation);
         return await DeletePluginAsync(plugin, runtimeOptions, pluginAddInvocation.SuccessAddResult!, cancellationToken);
     }
 
@@ -241,6 +276,26 @@ public static class CniRuntime
     {
         CniBackend.ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Version, VersionRequirements);
         return await VersionPluginInternalAsync(plugin, runtimeOptions, cancellationToken);
+    }
+
+    public static async Task<PluginInvocation> CheckPluginAsync(
+        Plugin plugin,
+        RuntimeOptions runtimeOptions,
+        CniAddResult lastAddResult,
+        CancellationToken cancellationToken = default)
+    {
+        CniBackend.ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Check, CheckRequirements);
+        return await CheckPluginInternalAsync(plugin, runtimeOptions, lastAddResult, cancellationToken);
+    }
+
+    public static async Task<PluginInvocation> CheckPluginAsync(
+        Plugin plugin,
+        RuntimeOptions runtimeOptions,
+        PluginAddInvocation pluginAddInvocation,
+        CancellationToken cancellationToken = default)
+    {
+        ThrowIfErrorInvocation(pluginAddInvocation);
+        return await CheckPluginAsync(plugin, runtimeOptions, pluginAddInvocation.SuccessAddResult!, cancellationToken);
     }
 
     public static async Task<CniAddResult?> GetStoredResultAsync(
@@ -386,6 +441,18 @@ public static class CniRuntime
         return PluginVersionInvocation.Success(versionResult!);
     }
 
+    private static async Task<PluginInvocation> CheckPluginInternalAsync(
+        Plugin plugin,
+        RuntimeOptions runtimeOptions,
+        CniAddResult lastAddResult,
+        CancellationToken cancellationToken = default)
+    {
+        var pluginBinary = await CniBackend.SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
+        var resultJson = await CniBackend.InvokeAsync(plugin, runtimeOptions, Constants.Operations.Check,
+            pluginBinary, lastAddResult, validAttachments: null, cancellationToken);
+        return MapResultJsonToPluginInvocation(resultJson);
+    }
+
     private static async Task<PluginListInvocation> GarbageCollectInternalAsync(
         IEnumerable<Plugin> plugins,
         RuntimeOptions runtimeOptions,
@@ -418,5 +485,13 @@ public static class CniRuntime
         
         var errorResult = JsonSerializer.Deserialize<CniErrorResult>(resultJson, SerializerOptions)!;
         return PluginInvocation.Error(errorResult);
+    }
+
+    private static void ThrowIfErrorInvocation(IBaseInvocation invocation)
+    {
+        if (invocation.IsError)
+        {
+            throw new ArgumentOutOfRangeException(nameof(invocation), invocation, "Invocation must be successful");
+        }
     }
 }

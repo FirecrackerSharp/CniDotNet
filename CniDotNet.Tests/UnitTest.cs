@@ -48,6 +48,6 @@ public class UnitTest
         await NetworkNamespaces.AddAsync(new NetworkNamespace("testing", 5), runtimeOptions.InvocationOptions);
         var i = await CniRuntime.AddPluginListAsync(pluginList, runtimeOptions);
         var j = await CniRuntime.DeletePluginListWithStoredResultAsync(pluginList, runtimeOptions);
-        
+        var k = await CniRuntime.VersionPluginListAsync(pluginList, runtimeOptions);
     }
 }

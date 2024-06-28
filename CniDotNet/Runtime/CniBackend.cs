@@ -8,7 +8,7 @@ using CniDotNet.Runtime.Exceptions;
 
 namespace CniDotNet.Runtime;
 
-internal static partial class CniRuntimeBackend
+internal static partial class CniBackend
 {
     private static readonly Regex CniRegex = CniRegexGenerator();
     private const int MaximumInterfaceNameLength = 15;
@@ -133,11 +133,11 @@ internal static partial class CniRuntimeBackend
         RuntimeOptions runtimeOptions,
         string operation,
         string pluginBinary,
-        AddCniResult? previousResult,
+        AddCniResult? addResult,
         IReadOnlyList<Attachment>? gcAttachments,
         CancellationToken cancellationToken)
     {
-        var stdinJson = DerivePluginInput(plugin, runtimeOptions, previousResult, gcAttachments);
+        var stdinJson = DerivePluginInput(plugin, runtimeOptions, addResult, gcAttachments);
         
         var environment = new Dictionary<string, string> { { Constants.Environment.Command, operation } };
         if (runtimeOptions.PluginOptions.ContainerId is not null)

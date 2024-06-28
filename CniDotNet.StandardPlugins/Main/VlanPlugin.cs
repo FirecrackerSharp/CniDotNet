@@ -1,6 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using CniDotNet.Data.Results;
+using CniDotNet.Data.CniResults;
 using CniDotNet.Runtime;
 using CniDotNet.Typing;
 
@@ -11,7 +11,7 @@ public sealed record VlanPlugin(
     uint VlanId,
     object Ipam,
     uint? Mtu = null,
-    AddCniResultDns? Dns = null,
+    CniAddResultDns? Dns = null,
     bool? LinkInContainer = null,
     TypedCapabilities? Capabilities = null,
     TypedArgs? Args = null)

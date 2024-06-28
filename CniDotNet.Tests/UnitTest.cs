@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using CniDotNet.Abstractions;
+using CniDotNet.Data;
 using CniDotNet.Data.Options;
 using CniDotNet.Runtime;
 using CniDotNet.Ssh;
@@ -44,7 +45,12 @@ public class UnitTest
             new PluginSearchOptions(Directory: "/root/plugins"),
             new InvocationStoreOptions(InMemoryInvocationStore.Instance));
 
-        var w = await CniRuntime.AddPluginListAsync(pluginList, runtimeOptions);
-        var q = await CniRuntime.DeletePluginListWithStoreAsync(pluginList, runtimeOptions);
+        await NetworkNamespaces.AddAsync(new NetworkNamespace("testing", 5), runtimeOptions.InvocationOptions);
+        var i = await CniRuntime.AddPluginListAsync(pluginList, runtimeOptions);
+
+        var check = await CniRuntime.CheckPluginListWithStoredResultAsync(pluginList, runtimeOptions);
+        var status = await CniRuntime.StatusPluginListAsync(pluginList, runtimeOptions);
+        
+        var j = await CniRuntime.DeletePluginListWithStoredResultAsync(pluginList, runtimeOptions);
     }
 }

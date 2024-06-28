@@ -1,6 +1,6 @@
 using CniDotNet.Data;
+using CniDotNet.Data.CniResults;
 using CniDotNet.Data.Options;
-using CniDotNet.Data.Results;
 
 namespace CniDotNet.Abstractions;
 
@@ -10,7 +10,7 @@ public sealed class InMemoryInvocationStore : IInvocationStore
     
     private readonly Dictionary<string, string> _binaryLocationEntries = new();
     private readonly HashSet<Attachment> _attachmentEntries = [];
-    private readonly Dictionary<PluginList, AddCniResult> _resultEntries = new();
+    private readonly Dictionary<PluginList, CniAddResult> _resultEntries = new();
     
     private InMemoryInvocationStore() {}
     
@@ -44,25 +44,30 @@ public sealed class InMemoryInvocationStore : IInvocationStore
             _attachmentEntries.FirstOrDefault(a => a.Plugin == plugin && a.PluginOptions == pluginOptions));
     }
 
-    public Task<IReadOnlyList<Attachment>> GetAllAttachmentsForPluginAsync(Plugin plugin, CancellationToken cancellationToken)
+    public Task<IEnumerable<Attachment>> GetAllAttachmentsAsync(CancellationToken cancellationToken)
     {
-        return Task.FromResult<IReadOnlyList<Attachment>>(
-            _attachmentEntries.Where(a => a.Plugin == plugin).ToList());
+        return Task.FromResult(_attachmentEntries.AsEnumerable());
     }
 
-    public Task<IReadOnlyList<Attachment>> GetAllAttachmentsForPluginListAsync(PluginList pluginList, CancellationToken cancellationToken)
+    public Task<IEnumerable<Attachment>> GetAllAttachmentsForPluginAsync(Plugin plugin, CancellationToken cancellationToken)
     {
-        return Task.FromResult<IReadOnlyList<Attachment>>(
-            _attachmentEntries.Where(a => a.ParentPluginList == pluginList).ToList());
+        return Task.FromResult(
+            _attachmentEntries.Where(a => a.Plugin == plugin));
     }
 
-    public Task SetResultAsync(PluginList pluginList, AddCniResult result, CancellationToken cancellationToken)
+    public Task<IEnumerable<Attachment>> GetAllAttachmentsForPluginListAsync(PluginList pluginList, CancellationToken cancellationToken)
+    {
+        return Task.FromResult(
+            _attachmentEntries.Where(a => a.ParentPluginList == pluginList));
+    }
+
+    public Task SetResultAsync(PluginList pluginList, CniAddResult result, CancellationToken cancellationToken)
     {
         _resultEntries[pluginList] = result;
         return Task.CompletedTask;
     }
 
-    public Task<AddCniResult?> GetResultAsync(PluginList pluginList, CancellationToken cancellationToken)
+    public Task<CniAddResult?> GetResultAsync(PluginList pluginList, CancellationToken cancellationToken)
     {
         return Task.FromResult(_resultEntries.GetValueOrDefault(pluginList));
     }

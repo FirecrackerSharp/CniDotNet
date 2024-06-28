@@ -1,8 +1,8 @@
 using System.Text.Json.Serialization;
 
-namespace CniDotNet.Data.Results;
+namespace CniDotNet.Data.CniResults;
 
-public sealed record AddCniResultRoute(
+public sealed record CniAddResultRoute(
     [property: JsonPropertyName("dst")] string Dst,
     [property: JsonPropertyName("gw")] string Gw,
     [property: JsonPropertyName("mtu")] uint Mtu,

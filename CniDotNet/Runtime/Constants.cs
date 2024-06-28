@@ -15,7 +15,7 @@ internal static class Constants
         public const string Args = "args";
         public const string RuntimeConfig = "runtimeConfig";
         public const string PreviousResult = "prevResult";
-        public const string GcAttachments = "cni.dev/attachments";
+        public const string GcAttachments = "cni.dev/valid-attachments";
         public const string GcContainerId = "containerID";
         public const string GcInterfaceName = "ifname";
     }
@@ -34,8 +34,8 @@ internal static class Constants
         public const string Add = "ADD";
         public const string Delete = "DEL";
         public const string Check = "CHECK";
-        public const string VerifyReadiness = "STATUS";
-        public const string ProbeVersions = "VERSION";
+        public const string Status = "STATUS";
+        public const string Version = "VERSION";
         public const string GarbageCollect = "GC";
     }
 }

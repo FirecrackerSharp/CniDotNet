@@ -1,4 +1,4 @@
-namespace CniDotNet.Data.Results;
+namespace CniDotNet.Data.CniResults;
 
 public enum WellKnownError
 {

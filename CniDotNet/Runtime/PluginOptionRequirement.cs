@@ -1,7 +1,7 @@
 namespace CniDotNet.Runtime;
 
 [Flags]
-public enum PluginOptionRequirement
+internal enum PluginOptionRequirement
 {
     ContainerId = 1,
     InterfaceName = 2,

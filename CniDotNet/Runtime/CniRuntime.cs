@@ -43,7 +43,7 @@ public static class CniRuntime
         CniBackend.ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Add, AddRequirements);
 
         var attachments = new List<Attachment>();
-        AddCniResult? previousAddResult = null;
+        CniAddResult? previousAddResult = null;
 
         foreach (var plugin in pluginList.Plugins)
         {
@@ -71,7 +71,7 @@ public static class CniRuntime
     public static async Task<PluginListInvocation> DeletePluginListAsync(
         PluginList pluginList,
         RuntimeOptions runtimeOptions,
-        AddCniResult lastAddResult,
+        CniAddResult lastAddResult,
         CancellationToken cancellationToken = default)
     {
         CniBackend.ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Delete, DeleteRequirements);
@@ -129,7 +129,7 @@ public static class CniRuntime
         CancellationToken cancellationToken = default)
     {
         CniBackend.ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Version, VersionRequirements);
-        var versionResults = new Dictionary<Plugin, VersionCniResult>();
+        var versionResults = new Dictionary<Plugin, CniVersionResult>();
 
         foreach (var plugin in pluginList.Plugins)
         {
@@ -213,7 +213,7 @@ public static class CniRuntime
     public static async Task<PluginInvocation> DeletePluginAsync(
         Plugin plugin,
         RuntimeOptions runtimeOptions,
-        AddCniResult lastAddResult,
+        CniAddResult lastAddResult,
         CancellationToken cancellationToken = default)
     {
         CniBackend.ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Delete, DeleteRequirements);
@@ -243,7 +243,7 @@ public static class CniRuntime
         return await VersionPluginInternalAsync(plugin, runtimeOptions, cancellationToken);
     }
 
-    public static async Task<AddCniResult?> GetStoredResultAsync(
+    public static async Task<CniAddResult?> GetStoredResultAsync(
         PluginList pluginList,
         RuntimeOptions runtimeOptions,
         CancellationToken cancellationToken = default)
@@ -322,7 +322,7 @@ public static class CniRuntime
     private static async Task<PluginAddInvocation> AddPluginInternalAsync(
         Plugin plugin,
         RuntimeOptions runtimeOptions,
-        AddCniResult? previousAddResult = null,
+        CniAddResult? previousAddResult = null,
         PluginList? pluginList = null,
         CancellationToken cancellationToken = default)
     {
@@ -332,11 +332,11 @@ public static class CniRuntime
 
         if (resultJson.Contains(ErrorDetector))
         {
-            var errorResult = JsonSerializer.Deserialize<ErrorCniResult>(resultJson, SerializerOptions);
+            var errorResult = JsonSerializer.Deserialize<CniErrorResult>(resultJson, SerializerOptions);
             return PluginAddInvocation.Error(errorResult!);
         }
 
-        var addResult = JsonSerializer.Deserialize<AddCniResult>(resultJson, SerializerOptions)!;
+        var addResult = JsonSerializer.Deserialize<CniAddResult>(resultJson, SerializerOptions)!;
         var attachment = new Attachment(runtimeOptions.PluginOptions, plugin, pluginList);
 
         if (runtimeOptions.InvocationStoreOptions is { StoreAttachments: true })
@@ -350,7 +350,7 @@ public static class CniRuntime
     private static async Task<PluginInvocation> DeletePluginInternalAsync(
         Plugin plugin,
         RuntimeOptions runtimeOptions,
-        AddCniResult lastAddResult,
+        CniAddResult lastAddResult,
         CancellationToken cancellationToken = default)
     {
         var pluginBinary = await CniBackend.SearchForPluginBinaryAsync(plugin, runtimeOptions, cancellationToken);
@@ -378,11 +378,11 @@ public static class CniRuntime
 
         if (resultJson.Contains(ErrorDetector))
         {
-            var errorResult = JsonSerializer.Deserialize<ErrorCniResult>(resultJson, SerializerOptions);
+            var errorResult = JsonSerializer.Deserialize<CniErrorResult>(resultJson, SerializerOptions);
             return PluginVersionInvocation.Error(errorResult!);
         }
 
-        var versionResult = JsonSerializer.Deserialize<VersionCniResult>(resultJson, SerializerOptions);
+        var versionResult = JsonSerializer.Deserialize<CniVersionResult>(resultJson, SerializerOptions);
         return PluginVersionInvocation.Success(versionResult!);
     }
 
@@ -404,7 +404,7 @@ public static class CniRuntime
                 pluginBinary, addResult: null, enumeratedAttachments, cancellationToken);
             if (!resultJson.Contains(ErrorDetector)) continue;
             
-            var errorResult = JsonSerializer.Deserialize<ErrorCniResult>(resultJson, SerializerOptions);
+            var errorResult = JsonSerializer.Deserialize<CniErrorResult>(resultJson, SerializerOptions);
             if (errorResult!.Message.Contains("unknown CNI_COMMAND")) continue; // plugin doesn't support GC
             return PluginListInvocation.Error(errorResult, plugin);
         }
@@ -416,7 +416,7 @@ public static class CniRuntime
     {
         if (!resultJson.Contains(ErrorDetector)) return PluginInvocation.Success;
         
-        var errorResult = JsonSerializer.Deserialize<ErrorCniResult>(resultJson, SerializerOptions)!;
+        var errorResult = JsonSerializer.Deserialize<CniErrorResult>(resultJson, SerializerOptions)!;
         return PluginInvocation.Error(errorResult);
     }
 }

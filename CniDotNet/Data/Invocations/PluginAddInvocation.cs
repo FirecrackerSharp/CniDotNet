@@ -5,14 +5,14 @@ namespace CniDotNet.Data.Invocations;
 public sealed class PluginAddInvocation : IBaseInvocation
 {
     public bool IsError { get; }
-    public ErrorCniResult? ErrorResult { get; }
+    public CniErrorResult? ErrorResult { get; }
     
     public bool IsSuccess { get; }
     public Attachment? SuccessAttachment { get; }
-    public AddCniResult? SuccessAddResult { get; }
+    public CniAddResult? SuccessAddResult { get; }
 
-    private PluginAddInvocation(ErrorCniResult? errorResult, Attachment? successAttachment,
-        AddCniResult? successAddResult)
+    private PluginAddInvocation(CniErrorResult? errorResult, Attachment? successAttachment,
+        CniAddResult? successAddResult)
     {
         ErrorResult = errorResult;
         IsError = errorResult is not null;
@@ -22,9 +22,9 @@ public sealed class PluginAddInvocation : IBaseInvocation
         IsSuccess = successAttachment is not null;
     }
 
-    internal static PluginAddInvocation Error(ErrorCniResult errorResult) =>
+    internal static PluginAddInvocation Error(CniErrorResult errorResult) =>
         new(errorResult, null, null);
 
-    internal static PluginAddInvocation Success(Attachment successAttachment, AddCniResult successAddResult) =>
+    internal static PluginAddInvocation Success(Attachment successAttachment, CniAddResult successAddResult) =>
         new(null, successAttachment, successAddResult);
 }

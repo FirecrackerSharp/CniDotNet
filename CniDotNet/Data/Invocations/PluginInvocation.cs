@@ -5,11 +5,11 @@ namespace CniDotNet.Data.Invocations;
 public sealed class PluginInvocation : IBaseInvocation
 {
     public bool IsError { get; }
-    public ErrorCniResult? ErrorResult { get; }
+    public CniErrorResult? ErrorResult { get; }
     
     public bool IsSuccess { get; }
 
-    private PluginInvocation(ErrorCniResult? errorResult)
+    private PluginInvocation(CniErrorResult? errorResult)
     {
         IsError = errorResult is not null;
         ErrorResult = errorResult;
@@ -18,5 +18,5 @@ public sealed class PluginInvocation : IBaseInvocation
 
     internal static readonly PluginInvocation Success = new(null);
 
-    internal static PluginInvocation Error(ErrorCniResult errorResult) => new(errorResult);
+    internal static PluginInvocation Error(CniErrorResult errorResult) => new(errorResult);
 }

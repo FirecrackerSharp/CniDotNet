@@ -5,12 +5,12 @@ namespace CniDotNet.Data.Invocations;
 public sealed class PluginListInvocation
 {
     public bool IsError { get; }
-    public ErrorCniResult? ErrorResult { get; }
+    public CniErrorResult? ErrorResult { get; }
     public Plugin? ErrorCausePlugin { get; }
     
     public bool IsSuccess { get; }
 
-    private PluginListInvocation(ErrorCniResult? errorResult, Plugin? errorCausePlugin)
+    private PluginListInvocation(CniErrorResult? errorResult, Plugin? errorCausePlugin)
     {
         IsError = errorResult is not null;
         ErrorResult = errorResult;
@@ -20,6 +20,6 @@ public sealed class PluginListInvocation
 
     internal static readonly PluginListInvocation Success = new(null, null);
 
-    internal static PluginListInvocation Error(ErrorCniResult errorResult, Plugin errorCausePlugin) =>
+    internal static PluginListInvocation Error(CniErrorResult errorResult, Plugin errorCausePlugin) =>
         new(errorResult, errorCausePlugin);
 }

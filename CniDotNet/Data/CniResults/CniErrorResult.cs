@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace CniDotNet.Data.CniResults;
 
-public sealed record ErrorCniResult(
+public sealed record CniErrorResult(
     [property: JsonPropertyName("code")] uint Code,
     [property: JsonPropertyName("msg")] string Message,
     [property: JsonPropertyName("details")]

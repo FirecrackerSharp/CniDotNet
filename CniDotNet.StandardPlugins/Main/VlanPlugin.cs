@@ -11,7 +11,7 @@ public sealed record VlanPlugin(
     uint VlanId,
     object Ipam,
     uint? Mtu = null,
-    AddCniResultDns? Dns = null,
+    CniAddResultDns? Dns = null,
     bool? LinkInContainer = null,
     TypedCapabilities? Capabilities = null,
     TypedArgs? Args = null)

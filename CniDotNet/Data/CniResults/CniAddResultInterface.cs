@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace CniDotNet.Data.CniResults;
 
-public sealed record AddCniResultInterface(
+public sealed record CniAddResultInterface(
     [property: JsonPropertyName("name")] string Name,
     [property: JsonPropertyName("mac")] string? Mac = null,
     [property: JsonPropertyName("mtu")] uint? Mtu = null,

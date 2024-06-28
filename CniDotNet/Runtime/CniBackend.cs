@@ -133,7 +133,7 @@ internal static partial class CniBackend
         RuntimeOptions runtimeOptions,
         string operation,
         string pluginBinary,
-        AddCniResult? addResult,
+        CniAddResult? addResult,
         IEnumerable<Attachment>? validAttachments,
         CancellationToken cancellationToken)
     {
@@ -163,7 +163,7 @@ internal static partial class CniBackend
         return process.CurrentOutput;
     }
 
-    private static string DerivePluginInput(Plugin plugin, RuntimeOptions runtimeOptions, AddCniResult? previousResult,
+    private static string DerivePluginInput(Plugin plugin, RuntimeOptions runtimeOptions, CniAddResult? previousResult,
         IEnumerable<Attachment>? validAttachments)
     {
         var jsonNode = plugin.PluginParameters.DeepClone();

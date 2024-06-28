@@ -10,7 +10,7 @@ public sealed class InMemoryInvocationStore : IInvocationStore
     
     private readonly Dictionary<string, string> _binaryLocationEntries = new();
     private readonly HashSet<Attachment> _attachmentEntries = [];
-    private readonly Dictionary<PluginList, AddCniResult> _resultEntries = new();
+    private readonly Dictionary<PluginList, CniAddResult> _resultEntries = new();
     
     private InMemoryInvocationStore() {}
     
@@ -61,13 +61,13 @@ public sealed class InMemoryInvocationStore : IInvocationStore
             _attachmentEntries.Where(a => a.ParentPluginList == pluginList));
     }
 
-    public Task SetResultAsync(PluginList pluginList, AddCniResult result, CancellationToken cancellationToken)
+    public Task SetResultAsync(PluginList pluginList, CniAddResult result, CancellationToken cancellationToken)
     {
         _resultEntries[pluginList] = result;
         return Task.CompletedTask;
     }
 
-    public Task<AddCniResult?> GetResultAsync(PluginList pluginList, CancellationToken cancellationToken)
+    public Task<CniAddResult?> GetResultAsync(PluginList pluginList, CancellationToken cancellationToken)
     {
         return Task.FromResult(_resultEntries.GetValueOrDefault(pluginList));
     }

@@ -22,9 +22,9 @@ public interface IInvocationStore
 
     Task<IEnumerable<Attachment>> GetAllAttachmentsForPluginListAsync(PluginList pluginList, CancellationToken cancellationToken);
 
-    Task SetResultAsync(PluginList pluginList, AddCniResult result, CancellationToken cancellationToken);
+    Task SetResultAsync(PluginList pluginList, CniAddResult result, CancellationToken cancellationToken);
 
-    Task<AddCniResult?> GetResultAsync(PluginList pluginList, CancellationToken cancellationToken);
+    Task<CniAddResult?> GetResultAsync(PluginList pluginList, CancellationToken cancellationToken);
 
     Task RemoveResultAsync(PluginList pluginList, CancellationToken cancellationToken);
 }

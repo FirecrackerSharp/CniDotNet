@@ -5,12 +5,12 @@ namespace CniDotNet.Data.Invocations;
 public sealed class PluginVersionInvocation : IBaseInvocation
 {
     public bool IsError { get; }
-    public ErrorCniResult? ErrorResult { get; }
+    public CniErrorResult? ErrorResult { get; }
     
     public bool IsSuccess { get; }
-    public VersionCniResult? SuccessVersionResult { get; }
+    public CniVersionResult? SuccessVersionResult { get; }
 
-    private PluginVersionInvocation(ErrorCniResult? errorResult, VersionCniResult? successVersionResult)
+    private PluginVersionInvocation(CniErrorResult? errorResult, CniVersionResult? successVersionResult)
     {
         IsError = errorResult is not null;
         ErrorResult = errorResult;
@@ -19,9 +19,9 @@ public sealed class PluginVersionInvocation : IBaseInvocation
         SuccessVersionResult = successVersionResult;
     }
 
-    internal static PluginVersionInvocation Error(ErrorCniResult errorResult) =>
+    internal static PluginVersionInvocation Error(CniErrorResult errorResult) =>
         new(errorResult, null);
 
-    internal static PluginVersionInvocation Success(VersionCniResult successVersionResult) =>
+    internal static PluginVersionInvocation Success(CniVersionResult successVersionResult) =>
         new(null, successVersionResult);
 }

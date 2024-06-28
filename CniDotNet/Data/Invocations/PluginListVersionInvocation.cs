@@ -5,14 +5,14 @@ namespace CniDotNet.Data.Invocations;
 public sealed class PluginListVersionInvocation : IBaseInvocation
 {
     public bool IsError { get; }
-    public ErrorCniResult? ErrorResult { get; }
+    public CniErrorResult? ErrorResult { get; }
     public Plugin? ErrorCausePlugin { get; }
     
     public bool IsSuccess { get; }
-    public IReadOnlyDictionary<Plugin, VersionCniResult>? SuccessVersionResults { get; }
+    public IReadOnlyDictionary<Plugin, CniVersionResult>? SuccessVersionResults { get; }
 
-    private PluginListVersionInvocation(ErrorCniResult? errorResult, Plugin? errorCausePlugin,
-        IReadOnlyDictionary<Plugin, VersionCniResult>? successVersionResults)
+    private PluginListVersionInvocation(CniErrorResult? errorResult, Plugin? errorCausePlugin,
+        IReadOnlyDictionary<Plugin, CniVersionResult>? successVersionResults)
     {
         IsError = errorResult is not null;
         ErrorResult = errorResult;
@@ -22,10 +22,10 @@ public sealed class PluginListVersionInvocation : IBaseInvocation
         SuccessVersionResults = successVersionResults;
     }
 
-    internal static PluginListVersionInvocation Error(ErrorCniResult errorResult, Plugin errorCausePlugin) =>
+    internal static PluginListVersionInvocation Error(CniErrorResult errorResult, Plugin errorCausePlugin) =>
         new(errorResult, errorCausePlugin, null);
 
     internal static PluginListVersionInvocation Success(
-        IReadOnlyDictionary<Plugin, VersionCniResult> successVersionResults) =>
+        IReadOnlyDictionary<Plugin, CniVersionResult> successVersionResults) =>
         new(null, null, successVersionResults);
 }

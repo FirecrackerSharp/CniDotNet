@@ -10,7 +10,7 @@ public sealed record PtpPlugin(
     object Ipam,
     bool? IpMasquerade = null,
     int? Mtu = null,
-    AddCniResultDns? Dns = null,
+    CniAddResultDns? Dns = null,
     TypedCapabilities? Capabilities = null,
     TypedArgs? Args = null)
     : TypedPlugin("ptp", Capabilities, Args)

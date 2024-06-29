@@ -43,7 +43,7 @@ public class UnitTest
                 extraCapabilities: new JsonObject { ["q"] = "a" }), 
             new InvocationOptions(host, "495762"),
             new PluginSearchOptions(Directory: "/root/plugins"),
-            new InvocationStoreOptions(InMemoryInvocationStore.Instance));
+            new InvocationStoreOptions(MemoryInvocationStore.Instance));
 
         await NetworkNamespaces.AddAsync(new NetworkNamespace("testing", 5), runtimeOptions.InvocationOptions);
         var i = await CniRuntime.AddPluginListAsync(pluginList, runtimeOptions);

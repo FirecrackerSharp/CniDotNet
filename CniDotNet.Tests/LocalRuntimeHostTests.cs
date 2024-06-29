@@ -1,4 +1,3 @@
-using AutoFixture.Xunit2;
 using CniDotNet.Abstractions;
 using CniDotNet.Data.Options;
 using FluentAssertions;
@@ -7,7 +6,7 @@ namespace CniDotNet.Tests;
 
 public class LocalRuntimeHostTests
 {
-    [Theory, AutoData]
+    [Theory, CustomAutoData]
     public async Task WriteFileAsync_ShouldPersist(string content)
     {
         var path = $"/tmp/{Guid.NewGuid()}";
@@ -33,7 +32,7 @@ public class LocalRuntimeHostTests
         Directory.Delete(path);
     }
 
-    [Theory, AutoData]
+    [Theory, CustomAutoData]
     public async Task ReadFileAsync_ShouldReturnContent(string content)
     {
         var path = $"/tmp/{Guid.NewGuid()}";
@@ -52,7 +51,7 @@ public class LocalRuntimeHostTests
         File.Exists(path).Should().BeFalse();
     }
 
-    [Theory, AutoData]
+    [Theory, CustomAutoData]
     public async Task GetEnvironmentVariableAsync_ShouldReturnOne(string variableName, string variableValue)
     {
         Environment.SetEnvironmentVariable(variableName, variableValue, EnvironmentVariableTarget.Process);

@@ -4,15 +4,15 @@ using CniDotNet.Data.Options;
 
 namespace CniDotNet.Abstractions;
 
-public sealed class InMemoryInvocationStore : IInvocationStore
+public sealed class MemoryInvocationStore : IInvocationStore
 {
-    public static readonly InMemoryInvocationStore Instance = new();
+    public static readonly MemoryInvocationStore Instance = new();
     
     private readonly Dictionary<string, string> _binaryLocationEntries = new();
     private readonly HashSet<Attachment> _attachmentEntries = [];
     private readonly Dictionary<PluginList, CniAddResult> _resultEntries = new();
     
-    private InMemoryInvocationStore() {}
+    private MemoryInvocationStore() {}
     
     public Task SetBinaryLocationAsync(string pluginType, string binaryLocation, CancellationToken cancellationToken)
     {

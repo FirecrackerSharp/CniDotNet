@@ -88,7 +88,11 @@ internal static partial class CniBackend
         {
             var hitLocation = await runtimeOptions.InvocationStoreOptions!.InvocationStore
                 .GetBinaryLocationAsync(plugin.Type, cancellationToken);
-            if (hitLocation is not null) return hitLocation;
+            if (hitLocation is not null)
+            {
+                runtimeOptions.PluginSearchOptions.CachedActualDirectory = hitLocation;
+                return hitLocation;
+            }
         }
         
         var matchFromTable = runtimeOptions.PluginSearchOptions.SearchTable?.GetValueOrDefault(plugin.Type);

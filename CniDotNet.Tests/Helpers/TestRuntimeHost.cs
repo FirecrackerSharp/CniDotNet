@@ -17,6 +17,7 @@ public class TestRuntimeHost : IRuntimeHost
     private readonly Dictionary<string, string?> _acceptEnvironment = new();
     private readonly List<string> _rejectEnvironment = [];
     private string? _returnedValue;
+    private List<string> _returnedValues = [];
     
     public void AcceptEnvironment(string name, string value)
     {
@@ -88,9 +89,25 @@ public class TestRuntimeHost : IRuntimeHost
         }
     }
 
+    public void AcceptInput(IReadOnlyList<Plugin> plugins, PluginOptions pluginOptions,
+        IReadOnlyList<Attachment> validAttachments)
+    {
+        foreach (var plugin in plugins)
+        {
+            _acceptJsons.Add(DerivePluginInput(plugin, pluginOptions, addResult: null, validAttachments));
+        }
+    }
+
     public void Return<T>(T value)
     {
         _returnedValue = JsonSerializer.Serialize(value, CniRuntime.SerializerOptions);
+    }
+
+    public void ReturnMany<T>(IEnumerable<T> values)
+    {
+        _returnedValues = values
+            .Select(x => JsonSerializer.Serialize(x, CniRuntime.SerializerOptions))
+            .ToList();
     }
 
     public void ReturnNothing()
@@ -156,11 +173,13 @@ public class TestRuntimeHost : IRuntimeHost
 
         _invocationIndex++;
 
+        var finalValue = _returnedValue ?? _returnedValues[_invocationIndex];
         return Task.FromResult<IRuntimeHostProcess>(
-            new TestRuntimeHostProcess(_returnedValue ?? throw new NullReferenceException()));
+            new TestRuntimeHostProcess(finalValue ?? throw new NullReferenceException()));
     }
     
-    private static string DerivePluginInput(Plugin plugin, PluginOptions pluginOptions, CniAddResult? addResult)
+    private static string DerivePluginInput(Plugin plugin, PluginOptions pluginOptions, CniAddResult? addResult,
+        IReadOnlyList<Attachment>? validAttachments = null)
     {
         var jsonNode = plugin.PluginParameters.DeepClone();
         
@@ -196,6 +215,22 @@ public class TestRuntimeHost : IRuntimeHost
         {
             jsonNode["prevResult"] = JsonSerializer
                 .SerializeToNode(addResult, CniRuntime.SerializerOptions)!.AsObject();
+        }
+        
+        if (validAttachments is not null)
+        {
+            var jsonArray = new JsonArray();
+
+            foreach (var gcAttachment in validAttachments)
+            {
+                jsonArray.Add(new JsonObject
+                {
+                    ["containerID"] = gcAttachment.PluginOptions.ContainerId!,
+                    ["ifname"] = gcAttachment.PluginOptions.InterfaceName!
+                });
+            }
+
+            jsonNode["cni.dev/valid-attachments"] = jsonArray;
         }
 
         return JsonSerializer.Serialize(jsonNode, CniRuntime.SerializerOptions);

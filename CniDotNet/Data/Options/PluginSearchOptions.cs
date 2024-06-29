@@ -8,7 +8,7 @@ public sealed record PluginSearchOptions(
     string EnvironmentVariable = "PLUGIN_PATH",
     SearchOption DirectorySearchOption = SearchOption.TopDirectoryOnly)
 {
-    internal string? CachedActualDirectory { get; private set; }
+    internal string? CachedActualDirectory { get; set; }
     
     internal async Task<string?> GetActualDirectoryAsync(IRuntimeHost runtimeHost, CancellationToken cancellationToken)
     {

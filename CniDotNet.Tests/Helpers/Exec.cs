@@ -49,10 +49,14 @@ public static class Exec
     public static async Task RuntimeTestAsync(
         Action<TestRuntimeHost, PluginOptions> configureHost,
         Func<RuntimeOptions, Task> act,
-        bool disableInvocationStore = false)
+        bool disableInvocationStore = false,
+        bool shouldClear = true)
     {
-        await MemoryInvocationStore.Instance.ClearAsync(CancellationToken.None);
-        
+        if (shouldClear)
+        {
+            await MemoryInvocationStore.Instance.ClearAsync(CancellationToken.None);
+        }
+
         var namespaceName = Guid.NewGuid().ToString();
         var pluginOptions = new PluginOptions("1.0.0", "fcnet", "fcnet", namespaceName, "eth0");
         
@@ -66,9 +70,7 @@ public static class Exec
             new PluginSearchOptions(Directory: "/tmp"),
             disableInvocationStore ? null : new InvocationStoreOptions(MemoryInvocationStore.Instance));
 
-        await CommandAsync($"ip netns add {namespaceName}");
         await act(runtimeOptions);
-        await CommandAsync($"ip netns del {namespaceName}");
     }
 
     public static async Task ValidationTestAsync<T>(

@@ -79,21 +79,21 @@ public class RuntimeGcTests
                 host.AcceptInput(plugins, options, attachments);
                 host.ReturnNothing();
             },
-            r => CniRuntime.GarbageCollectAsync(plugins, attachments, r));
+            r => CniRuntime.GarbageCollectAsync(pluginLists, attachments, r));
         await GcSuccessAsync(
             (host, options) =>
             {
                 host.AcceptInput(plugins, options, attachments);
                 host.Return(errorResult with { Code = 4 });
             },
-            r => CniRuntime.GarbageCollectAsync(plugins, attachments, r));
+            r => CniRuntime.GarbageCollectAsync(pluginLists, attachments, r));
         await GcErrorAsync(
             (host, options) =>
             {
                 host.AcceptInput(plugins, options, attachments);
                 host.Return(errorResult);
             },
-            r => CniRuntime.GarbageCollectAsync(plugins, attachments, r),
+            r => CniRuntime.GarbageCollectAsync(pluginLists, attachments, r),
             errorResult, plugins[0]);
     }
 
@@ -169,23 +169,23 @@ public class RuntimeGcTests
                 host.AcceptInput(plugins, options, attachments);
                 host.ReturnNothing();
             },
-            r => CniRuntime.GarbageCollectWithStoreAsync(plugins, r));
+            r => CniRuntime.GarbageCollectWithStoreAsync(pluginLists, r));
         await GcSuccessAsync(
             (host, options) =>
             {
                 host.AcceptInput(plugins, options, attachments);
                 host.Return(errorResult with { Code = 4 });
             },
-            r => CniRuntime.GarbageCollectWithStoreAsync(plugins, r));
+            r => CniRuntime.GarbageCollectWithStoreAsync(pluginLists, r));
         await GcErrorAsync(
             (host, options) =>
             {
                 host.AcceptInput(plugins, options, attachments);
                 host.Return(errorResult);
             },
-            r => CniRuntime.GarbageCollectWithStoreAsync(plugins, r),
+            r => CniRuntime.GarbageCollectWithStoreAsync(pluginLists, r),
             errorResult, plugins[0]);
-        await EnsureThrowsNotFoundAsync(r => CniRuntime.GarbageCollectWithStoreAsync(plugins, r));
+        await EnsureThrowsNotFoundAsync(r => CniRuntime.GarbageCollectWithStoreAsync(pluginLists, r));
     }
 
     private static async Task BootstrapStoreAsync(IReadOnlyList<Attachment> attachments)

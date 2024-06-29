@@ -2,6 +2,7 @@ using CniDotNet.Abstractions;
 using CniDotNet.Data;
 using CniDotNet.Data.CniResults;
 using CniDotNet.Runtime;
+using CniDotNet.Runtime.Exceptions;
 using CniDotNet.Tests.Helpers;
 using FluentAssertions;
 
@@ -168,5 +169,14 @@ public class RuntimeAddTests
     public async Task AddPluginListAsync_ShouldValidate(PluginList pluginList)
     {
         await Exec.ValidationTestAsync(CniRuntime.AddRequirements, r => CniRuntime.AddPluginListAsync(pluginList, r));
+    }
+
+    [Theory, CustomAutoData]
+    public async Task AddPluginListAsync_ShouldThrowForEmpty(PluginList pluginList)
+    {
+        pluginList = pluginList with { Plugins = [] };
+        await FluentActions
+            .Awaiting(async () => await CniRuntime.AddPluginListAsync(pluginList, Exec.EmptyRuntimeOptions))
+            .Should().ThrowAsync<CniEmptyPluginListException>();
     }
 }

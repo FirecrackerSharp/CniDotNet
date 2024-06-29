@@ -91,6 +91,16 @@ public class RuntimeCheckTests
     }
 
     [Theory, CustomAutoData]
+    public async Task CheckPluginListAsync_ShouldThrowForEmpty(PluginList pluginList, CniAddResult addResult)
+    {
+        pluginList = pluginList with { Plugins = [] };
+        await FluentActions
+            .Awaiting(
+                async () => await CniRuntime.CheckPluginListAsync(pluginList, Exec.EmptyRuntimeOptions, addResult))
+            .Should().ThrowAsync<CniEmptyPluginListException>();
+    }
+
+    [Theory, CustomAutoData]
     public async Task CheckPluginListWithStoredResultAsync_ShouldThrowForNotConfiguredStore(PluginList pluginList)
     {
         await FluentActions

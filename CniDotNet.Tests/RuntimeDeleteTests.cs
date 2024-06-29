@@ -180,6 +180,16 @@ public class RuntimeDeleteTests
         await Exec.ValidationTestAsync(CniRuntime.DeleteRequirements,
             r => CniRuntime.DeletePluginListAsync(pluginList, r, addResult));
     }
+    
+    [Theory, CustomAutoData]
+    public async Task DeletePluginListAsync_ShouldThrowForEmpty(PluginList pluginList, CniAddResult addResult)
+    {
+        pluginList = pluginList with { Plugins = [] };
+        await FluentActions
+            .Awaiting(
+                async () => await CniRuntime.DeletePluginListAsync(pluginList, Exec.EmptyRuntimeOptions, addResult))
+            .Should().ThrowAsync<CniEmptyPluginListException>();
+    }
 
     [Theory, CustomAutoData]
     public async Task DeletePluginListWithStoredResultAsync_ShouldThrowForNullStore(PluginList pluginList)

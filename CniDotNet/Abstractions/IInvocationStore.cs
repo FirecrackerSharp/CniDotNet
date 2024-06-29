@@ -6,6 +6,8 @@ namespace CniDotNet.Abstractions;
 
 public interface IInvocationStore
 {
+    Task ClearAsync(CancellationToken cancellationToken);
+    
     Task SetBinaryLocationAsync(string pluginType, string binaryLocation, CancellationToken cancellationToken);
 
     Task<string?> GetBinaryLocationAsync(string pluginType, CancellationToken cancellationToken);

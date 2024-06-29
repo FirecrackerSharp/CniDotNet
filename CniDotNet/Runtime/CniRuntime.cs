@@ -27,7 +27,7 @@ public static class CniRuntime
         Converters = { new JsonStringEnumConverterWithAttributeSupport() }
     };
 
-    internal static readonly JsonSerializerOptions PrettyPrintSerializerOptions = new()
+    public static readonly JsonSerializerOptions PrettyPrintSerializerOptions = new()
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         Converters = { new JsonStringEnumConverterWithAttributeSupport() },

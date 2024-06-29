@@ -2,6 +2,7 @@ using CniDotNet.Abstractions;
 using CniDotNet.Data;
 using CniDotNet.Data.CniResults;
 using CniDotNet.Data.Options;
+using CniDotNet.Tests.Helpers;
 using FluentAssertions;
 
 namespace CniDotNet.Tests;

@@ -3,7 +3,7 @@ using AutoFixture;
 using AutoFixture.Xunit2;
 using CniDotNet.Data;
 
-namespace CniDotNet.Tests;
+namespace CniDotNet.Tests.Helpers;
 
 public class CustomAutoDataAttribute() : AutoDataAttribute(() =>
 {

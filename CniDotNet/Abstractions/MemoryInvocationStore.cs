@@ -13,7 +13,15 @@ public sealed class MemoryInvocationStore : IInvocationStore
     private readonly Dictionary<PluginList, CniAddResult> _resultEntries = new();
     
     private MemoryInvocationStore() {}
-    
+
+    public Task ClearAsync(CancellationToken cancellationToken)
+    {
+        _binaryLocationEntries.Clear();
+        _attachmentEntries.Clear();
+        _resultEntries.Clear();
+        return Task.CompletedTask;
+    }
+
     public Task SetBinaryLocationAsync(string pluginType, string binaryLocation, CancellationToken cancellationToken)
     {
         _binaryLocationEntries[pluginType] = binaryLocation;

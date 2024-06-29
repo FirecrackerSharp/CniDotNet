@@ -10,16 +10,16 @@ namespace CniDotNet.Runtime;
 
 public static class CniRuntime
 {
-    private const PluginOptionRequirement AddRequirements = PluginOptionRequirement.ContainerId |
+    public const PluginOptionRequirement AddRequirements = PluginOptionRequirement.ContainerId |
                                                             PluginOptionRequirement.InterfaceName |
                                                             PluginOptionRequirement.NetworkNamespace;
-    private const PluginOptionRequirement DeleteRequirements = PluginOptionRequirement.ContainerId |
+    public const PluginOptionRequirement DeleteRequirements = PluginOptionRequirement.ContainerId |
                                                               PluginOptionRequirement.InterfaceName;
-    private const PluginOptionRequirement CheckRequirements = AddRequirements;
-    private const PluginOptionRequirement VersionRequirements = 0; // none
-    private const PluginOptionRequirement StatusRequirements = 0; // none
-    private const PluginOptionRequirement GarbageCollectRequirements = PluginOptionRequirement.Path;
-    private const string ErrorDetector = "\"code\": ";
+    public const PluginOptionRequirement CheckRequirements = AddRequirements;
+    public const PluginOptionRequirement VersionRequirements = 0; // none
+    public const PluginOptionRequirement StatusRequirements = 0; // none
+    public const PluginOptionRequirement GarbageCollectRequirements = PluginOptionRequirement.Path;
+    private const string ErrorDetector = "\"code\":";
     
     public static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -27,7 +27,7 @@ public static class CniRuntime
         Converters = { new JsonStringEnumConverterWithAttributeSupport() }
     };
 
-    public static readonly JsonSerializerOptions PrettyPrintSerializerOptions = new()
+    internal static readonly JsonSerializerOptions PrettyPrintSerializerOptions = new()
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         Converters = { new JsonStringEnumConverterWithAttributeSupport() },

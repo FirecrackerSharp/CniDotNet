@@ -80,6 +80,12 @@ public class RuntimeAddTests
     }
 
     [Theory, CustomAutoData]
+    public async Task AddPluginAsync_ShouldValidate(Plugin plugin)
+    {
+        await Exec.ValidationTestAsync(CniRuntime.AddRequirements, r => CniRuntime.AddPluginAsync(plugin, r));
+    }
+
+    [Theory, CustomAutoData]
     public async Task AddPluginListAsync_ShouldHandleSuccess(CniAddResult addResult, PluginList pluginList)
     {
         await Exec.RuntimeTestAsync(

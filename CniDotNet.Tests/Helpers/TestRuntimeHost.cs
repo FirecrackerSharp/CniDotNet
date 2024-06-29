@@ -62,9 +62,9 @@ public class TestRuntimeHost : IRuntimeHost
         }
     }
 
-    public void AcceptInput(Plugin plugin, PluginOptions pluginOptions)
+    public void AcceptInput(Plugin plugin, PluginOptions pluginOptions, CniAddResult? addResult = null)
     {
-        _acceptJsons.Add(DerivePluginInput(plugin, pluginOptions, null));
+        _acceptJsons.Add(DerivePluginInput(plugin, pluginOptions, addResult));
     }
 
     public void AcceptInput(PluginList pluginList, PluginOptions pluginOptions, CniAddResult addResult, bool skipFirst = false)
@@ -73,7 +73,7 @@ public class TestRuntimeHost : IRuntimeHost
 
         if (skipFirst)
         {
-            _acceptJsons.Add(DerivePluginInput(pluginList.Plugins[0], pluginOptions, previousResult: null));
+            _acceptJsons.Add(DerivePluginInput(pluginList.Plugins[0], pluginOptions, addResult: null));
         }
 
         for (var i = startIndex; i < pluginList.Plugins.Count; ++i)
@@ -85,7 +85,7 @@ public class TestRuntimeHost : IRuntimeHost
 
     public void Return<T>(T value)
     {
-        _returnedValue = JsonSerializer.Serialize(value, CniRuntime.PrettyPrintSerializerOptions);
+        _returnedValue = JsonSerializer.Serialize(value, CniRuntime.SerializerOptions);
     }
 
     public void ReturnNothing()
@@ -155,7 +155,7 @@ public class TestRuntimeHost : IRuntimeHost
             new TestRuntimeHostProcess(_returnedValue ?? throw new NullReferenceException()));
     }
     
-    private static string DerivePluginInput(Plugin plugin, PluginOptions pluginOptions, CniAddResult? previousResult)
+    private static string DerivePluginInput(Plugin plugin, PluginOptions pluginOptions, CniAddResult? addResult)
     {
         var jsonNode = plugin.PluginParameters.DeepClone();
         
@@ -187,10 +187,10 @@ public class TestRuntimeHost : IRuntimeHost
             }
         }
 
-        if (previousResult is not null)
+        if (addResult is not null)
         {
             jsonNode["prevResult"] = JsonSerializer
-                .SerializeToNode(previousResult, CniRuntime.SerializerOptions)!.AsObject();
+                .SerializeToNode(addResult, CniRuntime.SerializerOptions)!.AsObject();
         }
 
         return JsonSerializer.Serialize(jsonNode, CniRuntime.SerializerOptions);

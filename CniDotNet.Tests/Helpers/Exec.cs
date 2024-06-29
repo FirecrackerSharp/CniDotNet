@@ -1,12 +1,18 @@
 using System.Diagnostics;
 using System.Text;
 using CniDotNet.Abstractions;
+using CniDotNet.Data.Invocations;
 using CniDotNet.Data.Options;
+using CniDotNet.Runtime;
+using CniDotNet.Runtime.Exceptions;
+using FluentAssertions;
 
 namespace CniDotNet.Tests.Helpers;
 
 public static class Exec
 {
+    private static readonly PluginOptions PluginOptions = new("1.0.0", "fcnet", "fcnet", "netns", "eth0");
+    
     public static async Task<string> CommandAsync(string command)
     {
         var process = new Process
@@ -62,5 +68,31 @@ public static class Exec
         await CommandAsync($"ip netns add {namespaceName}");
         await act(runtimeOptions);
         await CommandAsync($"ip netns del {namespaceName}");
+    }
+
+    public static async Task ValidationTestAsync<T>(
+        PluginOptionRequirement requirements,
+        Func<RuntimeOptions, Task<T>> invoker) where T : IBaseInvocation
+    {
+        if (requirements.HasFlag(PluginOptionRequirement.ContainerId))
+        {
+            await RejectAsync(PluginOptions with { ContainerId = null });
+        }
+
+        return;
+
+        async Task AcceptAsync(PluginOptions pluginOptions)
+        {
+            await FluentActions
+                .Awaiting(async () => await invoker(new RuntimeOptions(pluginOptions, null!, null!)))
+                .Should().NotThrowAsync<CniValidationFailureException>();
+        }
+
+        async Task RejectAsync(PluginOptions pluginOptions)
+        {
+            await FluentActions
+                .Awaiting(async () => await invoker(new RuntimeOptions(pluginOptions, null!, null!)))
+                .Should().ThrowAsync<CniValidationFailureException>();
+        }
     }
 }

@@ -74,10 +74,55 @@ public static class Exec
         PluginOptionRequirement requirements,
         Func<RuntimeOptions, Task<T>> invoker) where T : IBaseInvocation
     {
+        // skip validation
+        await AcceptAsync(PluginOptions with
+        {
+            CniVersion = null!, Name = null!, ContainerId = null, InterfaceName = null, NetworkNamespace = null,
+            SkipValidation = true
+        });
+
+        // path
+        if (requirements.HasFlag(PluginOptionRequirement.Path))
+        {
+            await RejectAsync(PluginOptions with { IncludePath = false });
+            await AcceptAsync(PluginOptions with { IncludePath = true });
+        }
+
+        // network namespace
+        if (requirements.HasFlag(PluginOptionRequirement.NetworkNamespace))
+        {
+            await RejectAsync(PluginOptions with { NetworkNamespace = null });
+            await RejectAsync(PluginOptions with { NetworkNamespace = " " });
+            await AcceptAsync(PluginOptions with { NetworkNamespace = "validNetNs" });
+        }
+        
+        // network name
+        await RejectAsync(PluginOptions with { Name = null! });
+        await RejectAsync(PluginOptions with { Name = " " });
+        await RejectAsync(PluginOptions with { Name = "not matching regex" });
+        await AcceptAsync(PluginOptions with { Name = "validName" });
+        
+        // container ID
         if (requirements.HasFlag(PluginOptionRequirement.ContainerId))
         {
             await RejectAsync(PluginOptions with { ContainerId = null });
+            await RejectAsync(PluginOptions with { ContainerId = "  " });
+            await AcceptAsync(PluginOptions with { ContainerId = "validContainerId" });
         }
+        await RejectAsync(PluginOptions with { ContainerId = "not matching regex" });
+        
+        // interface name
+        if (requirements.HasFlag(PluginOptionRequirement.InterfaceName))
+        {
+            await RejectAsync(PluginOptions with { InterfaceName = null });
+        }
+        await RejectAsync(PluginOptions with { InterfaceName = new string('p', 999) });
+        await RejectAsync(PluginOptions with { InterfaceName = "." });
+        await RejectAsync(PluginOptions with { InterfaceName = ".." });
+        await RejectAsync(PluginOptions with { InterfaceName = "ifnamewitha/" });
+        await RejectAsync(PluginOptions with { InterfaceName = "ifnamewitha:" });
+        await RejectAsync(PluginOptions with { InterfaceName = "ifnamewitha " });
+        await AcceptAsync(PluginOptions with { InterfaceName = "validifname" });
 
         return;
 

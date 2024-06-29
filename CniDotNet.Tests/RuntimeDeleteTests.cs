@@ -81,4 +81,11 @@ public class RuntimeDeleteTests
             },
             disableInvocationStore: true);
     }
+
+    [Theory, CustomAutoData]
+    public async Task DeletePluginAsync_ShouldValidate(Plugin plugin, CniAddResult addResult)
+    {
+        await Exec.ValidationTestAsync(CniRuntime.DeleteRequirements,
+            r => CniRuntime.DeletePluginAsync(plugin, r, addResult));
+    }
 }

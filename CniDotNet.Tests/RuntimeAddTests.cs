@@ -163,4 +163,10 @@ public class RuntimeAddTests
             },
             disableInvocationStore: true);
     }
+
+    [Theory, CustomAutoData]
+    public async Task AddPluginListAsync_ShouldValidate(PluginList pluginList)
+    {
+        await Exec.ValidationTestAsync(CniRuntime.AddRequirements, r => CniRuntime.AddPluginListAsync(pluginList, r));
+    }
 }

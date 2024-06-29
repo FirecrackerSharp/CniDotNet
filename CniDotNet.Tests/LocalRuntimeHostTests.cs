@@ -81,7 +81,7 @@ public class LocalRuntimeHostTests
     [SkippableFact]
     public async Task StartProcessAsync_ShouldThrowIfCannotElevate()
     {
-        Skip.If(Environment.UserName == "root", "Automation will be automatic since running as root. Test is skipped");
+        Skip.If(Environment.UserName == "root", "Elevation will not be needed as test is being run as root");
 
         await FluentActions
             .Awaiting(async () =>

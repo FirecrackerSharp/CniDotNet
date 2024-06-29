@@ -62,7 +62,7 @@ public class RuntimeAddTests
     }
 
     [Theory, CustomAutoData]
-    public async Task AddPluginAsync_ShouldNotCacheWhenNotAsked(CniAddResult addResult, Plugin plugin)
+    public async Task AddPluginAsync_ShouldHandleDisabledStore(CniAddResult addResult, Plugin plugin)
     {
         await Exec.RuntimeTestAsync(
             (host, _) => host.Return(addResult),
@@ -75,6 +75,85 @@ public class RuntimeAddTests
                 var storedAttachment = await MemoryInvocationStore.Instance
                     .GetAttachmentAsync(plugin, runtimeOptions.PluginOptions, CancellationToken.None);
                 storedAttachment.Should().BeNull();
+            },
+            disableInvocationStore: true);
+    }
+
+    [Theory, CustomAutoData]
+    public async Task AddPluginListAsync_ShouldHandleSuccess(CniAddResult addResult, PluginList pluginList)
+    {
+        await Exec.RuntimeTestAsync(
+            (host, pluginOptions) =>
+            {
+                host.AcceptEnvironment("CNI_COMMAND", "ADD");
+                host.AcceptInput(pluginList, pluginOptions, addResult, skipFirst: true);
+                host.Return(addResult);
+            },
+            async runtimeOptions =>
+            {
+                var invocation = await CniRuntime.AddPluginListAsync(pluginList, runtimeOptions);
+                invocation.IsSuccess.Should().BeTrue();
+                invocation.IsError.Should().BeFalse();
+                invocation.ErrorResult.Should().BeNull();
+                invocation.ErrorCausePlugin.Should().BeNull();
+
+                var expectedAttachments = pluginList.Plugins
+                    .Select(p => new Attachment(runtimeOptions.PluginOptions, p, pluginList))
+                    .ToList();
+                invocation.SuccessAttachments.Should().BeEquivalentTo(expectedAttachments);
+                invocation.SuccessAddResult.Should().BeEquivalentTo(addResult);
+
+                var storedAttachments = await MemoryInvocationStore.Instance
+                    .GetAllAttachmentsForPluginListAsync(pluginList, CancellationToken.None);
+                storedAttachments.Should().BeEquivalentTo(expectedAttachments);
+                var storedResult =
+                    await MemoryInvocationStore.Instance.GetResultAsync(pluginList, CancellationToken.None);
+                storedResult.Should().BeEquivalentTo(addResult);
+            });
+    }
+
+    [Theory, CustomAutoData]
+    public async Task AddPluginListAsync_ShouldHandleError(CniErrorResult errorResult, CniAddResult addResult,
+        PluginList pluginList)
+    {
+        await Exec.RuntimeTestAsync(
+            (host, pluginOptions) =>
+            {
+                host.AcceptEnvironment("CNI_COMMAND", "ADD");
+                host.AcceptInput(pluginList, pluginOptions, addResult, skipFirst: true);
+                host.Return(errorResult);
+            },
+            async runtimeOptions =>
+            {
+                var invocation = await CniRuntime.AddPluginListAsync(pluginList, runtimeOptions);
+                invocation.IsError.Should().BeTrue();
+                invocation.IsSuccess.Should().BeFalse();
+                invocation.SuccessAddResult.Should().BeNull();
+                invocation.SuccessAttachments.Should().BeNull();
+
+                invocation.ErrorResult.Should().BeEquivalentTo(errorResult);
+                invocation.ErrorCausePlugin.Should().Be(pluginList.Plugins[0]);
+            });
+    }
+
+    [Theory, CustomAutoData]
+    public async Task AddPluginListAsync_ShouldHandleDisabledStore(CniAddResult addResult, PluginList pluginList)
+    {
+        await Exec.RuntimeTestAsync(
+            (host, _) => host.Return(addResult),
+            async runtimeOptions =>
+            {
+                var invocation = await CniRuntime.AddPluginListAsync(pluginList, runtimeOptions);
+                invocation.IsSuccess.Should().BeTrue();
+                invocation.SuccessAddResult.Should().BeEquivalentTo(addResult);
+                invocation.SuccessAttachments.Should().NotBeNull();
+
+                var storedAttachments = await MemoryInvocationStore.Instance
+                    .GetAllAttachmentsForPluginListAsync(pluginList, CancellationToken.None);
+                storedAttachments.Should().BeEmpty();
+                var storedResult =
+                    await MemoryInvocationStore.Instance.GetResultAsync(pluginList, CancellationToken.None);
+                storedResult.Should().BeNull();
             },
             disableInvocationStore: true);
     }

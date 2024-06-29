@@ -1,5 +1,6 @@
 using AutoFixture.Xunit2;
 using CniDotNet.Abstractions;
+using CniDotNet.Data.Options;
 using FluentAssertions;
 
 namespace CniDotNet.Tests;
@@ -59,5 +60,37 @@ public class LocalRuntimeHostTests
             await LocalRuntimeHost.Instance.GetEnvironmentVariableAsync(variableName, CancellationToken.None);
         actualVariableValue.Should().Be(variableValue);
         Environment.SetEnvironmentVariable(variableName, "", EnvironmentVariableTarget.Process);
+    }
+
+    [Fact]
+    public async Task StartProcessAsync_ShouldElevateWhenNecessary()
+    {
+        var invocationOptions = new InvocationOptions(LocalRuntimeHost.Instance,
+            ElevationPassword: Environment.GetEnvironmentVariable("ROOT_PWD") ?? null);
+        var environment = new Dictionary<string, string>
+        {
+            ["name"] = "value"
+        };
+
+        var process = await LocalRuntimeHost.Instance.StartProcessAsync("echo test", environment,
+            invocationOptions, default);
+        await process.WaitForExitAsync(default);
+        process.CurrentOutput.TrimEnd('\n').Should().Be("test");
+    }
+
+    [SkippableFact]
+    public async Task StartProcessAsync_ShouldThrowIfCannotElevate()
+    {
+        Skip.If(Environment.UserName == "root", "Automation will be automatic since running as root. Test is skipped");
+
+        await FluentActions
+            .Awaiting(async () =>
+            {
+                var invocationOptions = new InvocationOptions(LocalRuntimeHost.Instance, ElevationPassword: null);
+                await LocalRuntimeHost.Instance.StartProcessAsync("echo test", new Dictionary<string, string>(),
+                    invocationOptions, CancellationToken.None);
+            })
+            .Should()
+            .ThrowAsync<ElevationFailureException>();
     }
 }

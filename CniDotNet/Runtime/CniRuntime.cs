@@ -74,6 +74,7 @@ public static class CniRuntime
         CniAddResult lastAddResult,
         CancellationToken cancellationToken = default)
     {
+        if (pluginList.Plugins.Count == 0) throw new CniEmptyPluginListException();
         CniBackend.ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Delete, DeleteRequirements);
 
         for (var i = pluginList.Plugins.Count - 1; i >= 0; i--)
@@ -123,6 +124,7 @@ public static class CniRuntime
         RuntimeOptions runtimeOptions,
         CancellationToken cancellationToken = default)
     {
+        if (pluginList.Plugins.Count == 0) throw new CniEmptyPluginListException();
         CniBackend.ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Version, VersionRequirements);
         var versionResults = new Dictionary<Plugin, CniVersionResult>();
 
@@ -147,6 +149,7 @@ public static class CniRuntime
         CniAddResult lastAddResult,
         CancellationToken cancellationToken = default)
     {
+        if (pluginList.Plugins.Count == 0) throw new CniEmptyPluginListException();
         CniBackend.ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Check, CheckRequirements);
 
         foreach (var plugin in pluginList.Plugins)
@@ -190,6 +193,7 @@ public static class CniRuntime
         RuntimeOptions runtimeOptions,
         CancellationToken cancellationToken = default)
     {
+        if (pluginList.Plugins.Count == 0) throw new CniEmptyPluginListException();
         CniBackend.ValidatePluginOptions(runtimeOptions.PluginOptions, Constants.Operations.Status, StatusRequirements);
 
         foreach (var plugin in pluginList.Plugins)

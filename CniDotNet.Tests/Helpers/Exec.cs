@@ -12,6 +12,7 @@ namespace CniDotNet.Tests.Helpers;
 public static class Exec
 {
     private static readonly PluginOptions PluginOptions = new("1.0.0", "fcnet", "fcnet", "netns", "eth0");
+    public static readonly RuntimeOptions EmptyRuntimeOptions = new(null!, null!, null!);
     
     public static async Task<string> CommandAsync(string command)
     {

@@ -67,9 +67,14 @@ public class TestRuntimeHost : IRuntimeHost
         _acceptJsons.Add(DerivePluginInput(plugin, pluginOptions, addResult));
     }
 
-    public void AcceptInput(PluginList pluginList, PluginOptions pluginOptions, CniAddResult addResult, bool skipFirst = false)
+    public void AcceptInput(PluginList pluginList, PluginOptions pluginOptions, CniAddResult addResult,
+        bool skipFirst = false, bool backwards = false)   
     {
         var startIndex = skipFirst ? 1 : 0;
+        if (backwards)
+        {
+            startIndex = pluginList.Plugins.Count - 1;
+        }
 
         if (skipFirst)
         {

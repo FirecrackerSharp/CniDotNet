@@ -1,7 +1,9 @@
 using CniDotNet.Abstractions;
 using CniDotNet.Data;
 using CniDotNet.Data.CniResults;
+using CniDotNet.Data.Options;
 using CniDotNet.Runtime;
+using CniDotNet.Runtime.Exceptions;
 using CniDotNet.Tests.Helpers;
 using FluentAssertions;
 
@@ -87,5 +89,131 @@ public class RuntimeDeleteTests
     {
         await Exec.ValidationTestAsync(CniRuntime.DeleteRequirements,
             r => CniRuntime.DeletePluginAsync(plugin, r, addResult));
+    }
+
+    [Theory, CustomAutoData]
+    public async Task DeletePluginListAsync_ShouldHandleSuccess(PluginList pluginList, CniAddResult addResult)
+    {
+        await Exec.RuntimeTestAsync(
+            (host, pluginOptions) =>
+            {
+                host.AcceptEnvironment("CNI_COMMAND", "DEL");
+                host.AcceptInput(pluginList, pluginOptions, addResult, backwards: true);
+                host.ReturnNothing();
+            },
+            async runtimeOptions =>
+            {
+                await MemoryInvocationStore.Instance.SetResultAsync(pluginList, addResult, CancellationToken.None);
+                await MemoryInvocationStore.Instance.AddAttachmentAsync(
+                    new Attachment(runtimeOptions.PluginOptions, pluginList.Plugins[0], pluginList),
+                    CancellationToken.None);
+                
+                var invocation = await CniRuntime.DeletePluginListAsync(pluginList, runtimeOptions, addResult);
+                invocation.IsSuccess.Should().BeTrue();
+                invocation.IsError.Should().BeFalse();
+                invocation.ErrorResult.Should().BeNull();
+                invocation.ErrorCausePlugin.Should().BeNull();
+
+                var storedResult =
+                    await MemoryInvocationStore.Instance.GetResultAsync(pluginList, CancellationToken.None);
+                storedResult.Should().BeNull();
+                var storedAttachments = await MemoryInvocationStore.Instance
+                    .GetAllAttachmentsForPluginListAsync(pluginList, CancellationToken.None);
+                storedAttachments.Should().BeEmpty();
+            });
+    }
+
+    [Theory, CustomAutoData]
+    public async Task DeletePluginListAsync_ShouldHandleError(PluginList pluginList, CniAddResult addResult,
+        CniErrorResult errorResult)
+    {
+        await Exec.RuntimeTestAsync(
+            (host, pluginOptions) =>
+            {
+                host.AcceptEnvironment("CNI_COMMAND", "DEL");
+                host.AcceptInput(pluginList, pluginOptions, addResult, backwards: true);
+                host.Return(errorResult);
+            },
+            async runtimeOptions =>
+            {
+                var invocation = await CniRuntime.DeletePluginListAsync(pluginList, runtimeOptions, addResult);
+                invocation.IsSuccess.Should().BeFalse();
+                invocation.IsError.Should().BeTrue();
+                invocation.ErrorResult.Should().BeEquivalentTo(errorResult);
+                invocation.ErrorCausePlugin.Should().Be(pluginList.Plugins[^1]);
+            });
+    }
+
+    [Theory, CustomAutoData]
+    public async Task DeletePluginListAsync_ShouldHandleDisabledStore(PluginList pluginList, CniAddResult addResult)
+    {
+        await Exec.RuntimeTestAsync(
+            (host, pluginOptions) =>
+            {
+                host.AcceptEnvironment("CNI_COMMAND", "DEL");
+                host.AcceptInput(pluginList, pluginOptions, addResult, backwards: true);
+                host.ReturnNothing();
+            },
+            async runtimeOptions =>
+            {
+                await MemoryInvocationStore.Instance.SetResultAsync(pluginList, addResult, CancellationToken.None);
+                await MemoryInvocationStore.Instance.AddAttachmentAsync(
+                    new Attachment(runtimeOptions.PluginOptions, pluginList.Plugins[0], pluginList),
+                    CancellationToken.None);
+                
+                var invocation = await CniRuntime.DeletePluginListAsync(pluginList, runtimeOptions, addResult);
+                invocation.IsSuccess.Should().BeTrue();
+                
+                var storedResult =
+                    await MemoryInvocationStore.Instance.GetResultAsync(pluginList, CancellationToken.None);
+                storedResult.Should().NotBeNull();
+                var storedAttachments = await MemoryInvocationStore.Instance
+                    .GetAllAttachmentsForPluginListAsync(pluginList, CancellationToken.None);
+                storedAttachments.Should().NotBeEmpty();
+            },
+            disableInvocationStore: true);
+    }
+
+    [Theory, CustomAutoData]
+    public async Task DeletePluginListAsync_ShouldValidate(PluginList pluginList, CniAddResult addResult)
+    {
+        await Exec.ValidationTestAsync(CniRuntime.DeleteRequirements,
+            r => CniRuntime.DeletePluginListAsync(pluginList, r, addResult));
+    }
+
+    [Theory, CustomAutoData]
+    public async Task DeletePluginListWithStoredResultAsync_ShouldThrowForNullStore(PluginList pluginList)
+    {
+        await FluentActions
+            .Awaiting(async () => await CniRuntime
+                .DeletePluginListWithStoredResultAsync(pluginList, Exec.EmptyRuntimeOptions))
+            .Should().ThrowAsync<CniStoreRetrievalException>();
+    }
+
+    [Theory, CustomAutoData]
+    public async Task DeletePluginListWithStoredResultAsync_ShouldThrowForDisabledResultStore(PluginList pluginList)
+    {
+        var runtimeOptions = Exec.EmptyRuntimeOptions with
+        {
+            InvocationStoreOptions = new InvocationStoreOptions(MemoryInvocationStore.Instance, StoreResults: false)
+        };
+        await FluentActions
+            .Awaiting(async () => await CniRuntime.DeletePluginListWithStoredResultAsync(pluginList, runtimeOptions))
+            .Should().ThrowAsync<CniStoreRetrievalException>();
+    }
+
+    [Theory, CustomAutoData]
+    public async Task DeletePluginListWithStoredResultAsync_ShouldNotThrowForEnabledResultStore(
+        PluginList pluginList, CniAddResult addResult)
+    {
+        await MemoryInvocationStore.Instance.SetResultAsync(pluginList, addResult, CancellationToken.None);
+        
+        var runtimeOptions = Exec.EmptyRuntimeOptions with
+        {
+            InvocationStoreOptions = new InvocationStoreOptions(MemoryInvocationStore.Instance, StoreResults: true)
+        };
+        await FluentActions
+            .Awaiting(async () => await CniRuntime.DeletePluginListWithStoredResultAsync(pluginList, runtimeOptions))
+            .Should().NotThrowAsync<CniStoreRetrievalException>();
     }
 }

@@ -343,13 +343,14 @@ public static class CniRuntime
 
     public static async Task<Attachment?> GetStoredAttachmentAsync(
         Plugin plugin,
+        PluginOptions pluginOptions,
         RuntimeOptions runtimeOptions,
         CancellationToken cancellationToken = default)
     {
         if (runtimeOptions.InvocationStoreOptions is not { StoreAttachments: true }) return null;
 
         var attachment = await runtimeOptions.InvocationStoreOptions.InvocationStore.GetAttachmentAsync(plugin,
-                runtimeOptions.PluginOptions, cancellationToken);
+                pluginOptions, cancellationToken);
         return attachment;
     }
 

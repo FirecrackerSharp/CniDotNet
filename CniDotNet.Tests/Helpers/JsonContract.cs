@@ -33,7 +33,7 @@ public class JsonContract<T>(T instance)
         
         foreach (var (key, value) in _directMatchers)
         {
-            jsonObject.AsObject().Should().ContainKey(key);
+            jsonObject.Should().ContainKey(key);
 
             var expectedValue = JsonSerializer.Serialize(value, CniRuntime.SerializerOptions);
             var actualValue = jsonObject[key]!.ToJsonString(CniRuntime.SerializerOptions);

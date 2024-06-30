@@ -1,10 +1,16 @@
+using System.Text.Json.Nodes;
+using CniDotNet.Data;
+using CniDotNet.Runtime;
 using CniDotNet.Tests.Helpers;
 using CniDotNet.Typing;
+using FluentAssertions;
 
 namespace CniDotNet.Tests;
 
 public class TypingTests
 {
+    private static EventHandler<bool>? _serializedEvent;
+    
     [Theory, CustomAutoData]
     public void TypedCapabilityDns(TypedCapabilityDns instance)
     {
@@ -81,5 +87,61 @@ public class TypingTests
             .Contains("ips", x => x.Ips)
             .MergesWith(x => x.ExtraArgs)
             .Test(x => x.Serialize());
+    }
+
+    [Theory, CustomAutoData]
+    public void TypedPlugin(MockTypedPlugin typedPlugin)
+    {
+        var invoked = false;
+        _serializedEvent += (_, _) => invoked = true;
+        
+        var builtPlugin = typedPlugin.Build();
+        VerifyPluginBuild(typedPlugin, builtPlugin);
+        invoked.Should().BeTrue();
+    }
+
+    [Theory, CustomAutoData]
+    public void TypedPluginList(List<MockTypedPlugin> plugins,
+        Version cniVersion, string name, List<Version> cniVersions, bool disableCheck, bool disableGc)
+    {
+        var typedList = new TypedPluginList(cniVersion, name, plugins, cniVersions, disableCheck, disableGc);
+        var invocationCount = 0;
+        _serializedEvent += (_, _) => invocationCount++;
+        
+        var builtList = typedList.Build();
+        invocationCount.Should().Be(plugins.Count);
+        builtList.Name.Should().Be(name);
+        builtList.CniVersion.Should().Be(cniVersion.ToString());
+        builtList.CniVersions.Should().BeEquivalentTo(cniVersions.Select(x => x.ToString()));
+        builtList.DisableCheck.Should().Be(disableCheck);
+        builtList.DisableGc.Should().Be(disableGc);
+
+        for (var i = 0; i < plugins.Count; ++i)
+        {
+            VerifyPluginBuild(plugins[i], builtList.Plugins[i]);
+        }
+    }
+
+    private static void VerifyPluginBuild(TypedPlugin typedPlugin, Plugin builtPlugin)
+    {
+        builtPlugin.Type.Should().Be(typedPlugin.Type);
+        ShouldEquivalentlySerialize(builtPlugin.Args!, typedPlugin.Args!.Serialize());
+        ShouldEquivalentlySerialize(builtPlugin.Capabilities!, typedPlugin.Capabilities!.Serialize());
+    }
+
+    private static void ShouldEquivalentlySerialize(JsonObject first, JsonObject second)
+    {
+        var firstJson = first.ToJsonString(CniRuntime.SerializerOptions);
+        var secondJson = second.ToJsonString(CniRuntime.SerializerOptions);
+        firstJson.Should().Be(secondJson);
+    }
+
+    public record MockTypedPlugin(TypedCapabilities Capabilities, TypedArgs Args)
+        : TypedPlugin("mock", Capabilities, Args)
+    {
+        protected override void SerializePluginParameters(JsonObject jsonObject)
+        {
+            _serializedEvent?.Invoke(this, true);
+        }
     }
 }

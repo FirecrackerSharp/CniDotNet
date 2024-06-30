@@ -91,25 +91,15 @@ public sealed class SshRuntimeHost(ConnectionInfo connectionInfo) : IRuntimeHost
         InvocationOptions invocationOptions, CancellationToken cancellationToken)
     {
         var environmentString = IRuntimeHost.BuildEnvironmentString(environment);
-        
-        if (connectionInfo.Username == "root")
+
+        if (connectionInfo.Username != "root")
         {
-            var nonElevatedCommand = Ssh.CreateCommand($"{environmentString} {command}");
-            return new SshRuntimeHostProcess(nonElevatedCommand, nonElevatedCommand.BeginExecute());
+            throw new ElevationFailureException("Elevation is not supported with SSH. Instead, connect as root");
         }
 
-        if (invocationOptions.ElevationPassword is null)
-        {
-            throw new ElevationFailureException(
-                "Need to elevate on SSH host but elevation password hasn't been provided");
-        }
+        var nonElevatedCommand = Ssh.CreateCommand($"{environmentString} {command}");
+        return new SshRuntimeHostProcess(nonElevatedCommand, nonElevatedCommand.BeginExecute());
 
-        var elevationCommand = Ssh.CreateCommand("su");
-        var asyncResult = elevationCommand.BeginExecute();
-        var inputStreamWriter = new StreamWriter(elevationCommand.CreateInputStream());
-        await inputStreamWriter.WriteLineAsync(new StringBuilder(invocationOptions.ElevationPassword), cancellationToken);
-        await inputStreamWriter.WriteLineAsync(new StringBuilder($"{environmentString} {command} ; exit"), cancellationToken);
-        return new SshRuntimeHostProcess(elevationCommand, asyncResult);
     }
 
     public void Dispose()

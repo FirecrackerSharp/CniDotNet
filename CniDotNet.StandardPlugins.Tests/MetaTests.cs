@@ -4,10 +4,10 @@ namespace CniDotNet.StandardPlugins.Tests;
 
 public class MetaTests
 {
-    [Theory, CustomAutoData]
-    public void BandwidthPlugin(BandwidthPlugin instance)
+    [Fact]
+    public void BandwidthPlugin()
     {
-        new JsonContract<BandwidthPlugin>(instance)
+        new JsonContract<BandwidthPlugin>()
             .Contains("ingressRate", x => x.IngressRate)
             .Contains("ingressBurst", x => x.IngressBurst)
             .Contains("egressRate", x => x.EgressRate)

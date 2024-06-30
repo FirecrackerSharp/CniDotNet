@@ -8,7 +8,7 @@ public abstract record TypedPlugin(
     TypedCapabilities? Capabilities,
     TypedArgs? Args)
 {
-    protected abstract void SerializePluginParameters(JsonObject jsonObject);
+    public abstract void SerializePluginParameters(JsonObject jsonObject);
 
     public Plugin Build()
     {

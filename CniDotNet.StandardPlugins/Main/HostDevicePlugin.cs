@@ -11,7 +11,7 @@ public sealed record HostDevicePlugin(
     TypedCapabilities? Capabilities = null,
     TypedArgs? Args = null) : TypedPlugin("host-device", Capabilities, Args)
 {
-    protected override void SerializePluginParameters(JsonObject jsonObject)
+    public override void SerializePluginParameters(JsonObject jsonObject)
     {
         if (DeviceName is not null)
         {

@@ -11,7 +11,7 @@ public sealed record BandwidthPlugin(
     TypedCapabilities? Capabilities = null,
     TypedArgs? Args = null) : TypedPlugin("bandwidth", Capabilities, Args)
 {
-    protected override void SerializePluginParameters(JsonObject jsonObject)
+    public override void SerializePluginParameters(JsonObject jsonObject)
     {
         jsonObject["ingressRate"] = IngressRate;
         jsonObject["ingressBurst"] = IngressBurst;

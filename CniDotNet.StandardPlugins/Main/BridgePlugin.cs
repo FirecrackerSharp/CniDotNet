@@ -24,7 +24,7 @@ public sealed record BridgePlugin(
     TypedCapabilities? Capabilities = null,
     TypedArgs? Args = null) : TypedPlugin("bridge", Capabilities, Args)
 {
-    protected override void SerializePluginParameters(JsonObject jsonObject)
+    public override void SerializePluginParameters(JsonObject jsonObject)
     {
         if (Ipam is not null)
         {

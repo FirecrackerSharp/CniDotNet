@@ -15,7 +15,7 @@ public sealed record PtpPlugin(
     TypedArgs? Args = null)
     : TypedPlugin("ptp", Capabilities, Args)
 {
-    protected override void SerializePluginParameters(JsonObject jsonObject)
+    public override void SerializePluginParameters(JsonObject jsonObject)
     {
         if (IpMasquerade is not null)
         {

@@ -9,7 +9,7 @@ public sealed record VrfPlugin(
     TypedCapabilities? Capabilities = null,
     TypedArgs? Args = null) : TypedPlugin("vrf", Capabilities, Args)
 {
-    protected override void SerializePluginParameters(JsonObject jsonObject)
+    public override void SerializePluginParameters(JsonObject jsonObject)
     {
         jsonObject["vrfname"] = VrfName;
 

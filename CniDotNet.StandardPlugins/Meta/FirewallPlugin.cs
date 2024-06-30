@@ -12,7 +12,7 @@ public sealed record FirewallPlugin(
     TypedArgs? Args = null)
     : TypedPlugin("firewall", Capabilities, Args)
 {
-    protected override void SerializePluginParameters(JsonObject jsonObject)
+    public override void SerializePluginParameters(JsonObject jsonObject)
     {
         if (Backend.HasValue)
         {

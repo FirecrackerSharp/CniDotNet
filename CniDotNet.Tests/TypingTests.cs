@@ -139,7 +139,7 @@ public class TypingTests
     public record MockTypedPlugin(TypedCapabilities Capabilities, TypedArgs Args)
         : TypedPlugin("mock", Capabilities, Args)
     {
-        protected override void SerializePluginParameters(JsonObject jsonObject)
+        public override void SerializePluginParameters(JsonObject jsonObject)
         {
             _serializedEvent?.Invoke(this, true);
         }

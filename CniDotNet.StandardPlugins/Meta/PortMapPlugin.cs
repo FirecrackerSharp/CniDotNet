@@ -15,7 +15,7 @@ public sealed record PortMapPlugin(
     TypedCapabilities? Capabilities = null,
     TypedArgs? Args = null) : TypedPlugin("portmap", Capabilities, Args)
 {
-    protected override void SerializePluginParameters(JsonObject jsonObject)
+    public override void SerializePluginParameters(JsonObject jsonObject)
     {
         if (Snat is not null)
         {

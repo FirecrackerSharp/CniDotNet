@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CniDotNet.StandardPlugins",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CniDotNet.Ssh", "CniDotNet.Ssh\CniDotNet.Ssh.csproj", "{92AE556A-3A9C-4121-A6C6-78BF6A95587C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CniDotNet.StandardPlugins.Tests", "CniDotNet.StandardPlugins.Tests\CniDotNet.StandardPlugins.Tests.csproj", "{2382BAE7-A870-416E-ABE8-DD4B78023336}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{92AE556A-3A9C-4121-A6C6-78BF6A95587C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{92AE556A-3A9C-4121-A6C6-78BF6A95587C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{92AE556A-3A9C-4121-A6C6-78BF6A95587C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2382BAE7-A870-416E-ABE8-DD4B78023336}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2382BAE7-A870-416E-ABE8-DD4B78023336}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2382BAE7-A870-416E-ABE8-DD4B78023336}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2382BAE7-A870-416E-ABE8-DD4B78023336}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

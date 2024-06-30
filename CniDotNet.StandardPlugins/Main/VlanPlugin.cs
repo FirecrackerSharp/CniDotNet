@@ -17,7 +17,7 @@ public sealed record VlanPlugin(
     TypedArgs? Args = null)
     : TypedPlugin("vlan", Capabilities, Args)
 {
-    protected override void SerializePluginParameters(JsonObject jsonObject)
+    public override void SerializePluginParameters(JsonObject jsonObject)
     {
         jsonObject["master"] = Master;
         jsonObject["vlanId"] = VlanId;

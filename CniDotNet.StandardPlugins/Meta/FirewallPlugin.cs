@@ -1,4 +1,6 @@
+using System.Text.Json;
 using System.Text.Json.Nodes;
+using CniDotNet.Runtime;
 using CniDotNet.Typing;
 
 namespace CniDotNet.StandardPlugins.Meta;
@@ -16,7 +18,7 @@ public sealed record FirewallPlugin(
     {
         if (Backend.HasValue)
         {
-            jsonObject["backend"] = Backend == FirewallBackend.Firewalld ? "firewalld" : "iptables";
+            jsonObject["backend"] = JsonSerializer.SerializeToNode(Backend, CniRuntime.SerializerOptions);
         }
 
         if (IptablesAdminChainName is not null)

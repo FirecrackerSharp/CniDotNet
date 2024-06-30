@@ -39,12 +39,12 @@ public sealed record PortMapPlugin(
 
         if (ConditionsIpV4 is not null)
         {
-            jsonObject["conditionsV4"] = JsonSerializer.Serialize(ConditionsIpV4, CniRuntime.SerializerOptions);
+            jsonObject["conditionsV4"] = JsonSerializer.SerializeToNode(ConditionsIpV4, CniRuntime.SerializerOptions);
         }
 
         if (ConditionsIpV6 is not null)
         {
-            jsonObject["conditionsV6"] = JsonSerializer.Serialize(ConditionsIpV6, CniRuntime.SerializerOptions);
+            jsonObject["conditionsV6"] = JsonSerializer.SerializeToNode(ConditionsIpV6, CniRuntime.SerializerOptions);
         }
     }
 }

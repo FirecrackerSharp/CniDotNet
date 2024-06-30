@@ -64,7 +64,7 @@ public class JsonContract<T>
             jsonObject.Should().ContainKey(key);
 
             var expectedValue = JsonSerializer.Serialize(value, CniRuntime.SerializerOptions);
-            var actualValue = jsonObject[key]!.ToJsonString(CniRuntime.SerializerOptions);
+            var actualValue = JsonSerializer.Serialize(jsonObject[key], CniRuntime.SerializerOptions);
             expectedValue.Should().Be(actualValue);
         }
     }

@@ -30,16 +30,16 @@ public class JsonContract<T>
         }
     }
     
-    private readonly Dictionary<string, object?> _directMatchers = new();
+    private readonly Dictionary<string, object?> _matchers = new();
     private readonly T _instance = Fixture.Create<T>();
 
     public JsonContract<T> Contains(string key, Func<T, object?> propertySelector)
     {
-        _directMatchers[key] = propertySelector(_instance);
+        _matchers[key] = propertySelector(_instance);
         return this;
     }
 
-    public void Test()
+    public void TestNonPlugin()
     {
         Test(i => JsonSerializer.SerializeToNode(i, CniRuntime.SerializerOptions)!.AsObject());
     }
@@ -59,13 +59,18 @@ public class JsonContract<T>
     {
         var jsonObject = serializer(_instance);
         
-        foreach (var (key, value) in _directMatchers)
+        foreach (var (key, value) in _matchers)
         {
             jsonObject.Should().ContainKey(key);
 
             var expectedValue = JsonSerializer.Serialize(value, CniRuntime.SerializerOptions);
             var actualValue = JsonSerializer.Serialize(jsonObject[key], CniRuntime.SerializerOptions);
             expectedValue.Should().Be(actualValue);
+        }
+
+        foreach (var (key, _) in jsonObject)
+        {
+            _matchers.Should().ContainKey(key);
         }
     }
 }

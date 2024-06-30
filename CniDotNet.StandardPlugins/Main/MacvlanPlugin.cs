@@ -24,14 +24,7 @@ public sealed record MacvlanPlugin(
             jsonObject["master"] = Master;
         }
 
-        jsonObject["mode"] = Mode switch
-        {
-            MacvlanMode.Bridge => "bridge",
-            MacvlanMode.Private => "private",
-            MacvlanMode.Vepa => "vepa",
-            MacvlanMode.Passthru => "passthru",
-            _ => throw new ArgumentOutOfRangeException(nameof(jsonObject))
-        };
+        jsonObject["mode"] = JsonSerializer.SerializeToNode(Mode, CniRuntime.SerializerOptions);
 
         if (Mtu is not null)
         {

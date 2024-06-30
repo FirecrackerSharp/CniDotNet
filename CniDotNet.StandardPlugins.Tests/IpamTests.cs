@@ -11,7 +11,7 @@ public class IpamTests
             .Contains("option", x => x.Option)
             .Contains("value", x => x.Value)
             .Contains("fromArg", x => x.FromArgument)
-            .Test();
+            .TestNonPlugin();
     }
 
     [Fact]
@@ -20,7 +20,7 @@ public class IpamTests
         new JsonContract<DhcpRequestOptions>()
             .Contains("skipDefault", x => x.SkipDefault)
             .Contains("option", x => x.Option)
-            .Test();
+            .TestNonPlugin();
     }
 
     [Fact]
@@ -30,7 +30,7 @@ public class IpamTests
             .Contains("daemonSocketPath", x => x.DaemonSocketPath)
             .Contains("request", x => x.RequestOptions)
             .Contains("provide", x => x.LeaseOptions)
-            .Test();
+            .TestNonPlugin();
     }
 
     [Fact]
@@ -39,7 +39,7 @@ public class IpamTests
         new JsonContract<GenericIpamRoute>()
             .Contains("dst", x => x.Destination)
             .Contains("gw", x => x.Gateway)
-            .Test();
+            .TestNonPlugin();
     }
 
     [Fact]
@@ -51,7 +51,7 @@ public class IpamTests
             .Contains("resolvConf", x => x.ResolvConf)
             .Contains("dataDir", x => x.DataDir)
             .Contains("routes", x => x.Routes)
-            .Test();
+            .TestNonPlugin();
     }
 
     [Fact]
@@ -62,7 +62,7 @@ public class IpamTests
             .Contains("addresses", x => x.Addresses)
             .Contains("routes", x => x.Routes)
             .Contains("dns", x => x.Dns)
-            .Test();
+            .TestNonPlugin();
     }
 
     [Fact]
@@ -71,6 +71,6 @@ public class IpamTests
         new JsonContract<StaticIpamAddress>()
             .Contains("address", x => x.Address)
             .Contains("gateway", x => x.Gateway)
-            .Test();
+            .TestNonPlugin();
     }
 }

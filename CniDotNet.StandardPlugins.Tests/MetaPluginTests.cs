@@ -2,7 +2,7 @@ using CniDotNet.StandardPlugins.Meta;
 
 namespace CniDotNet.StandardPlugins.Tests;
 
-public class MetaTests
+public class MetaPluginTests
 {
     [Fact]
     public void BandwidthPlugin()
@@ -13,6 +13,14 @@ public class MetaTests
             .Contains("egressRate", x => x.EgressRate)
             .Contains("egressBurst", x => x.EgressBurst)
             .TestPlugin();
+    }
+
+    [Fact]
+    public void FirewallBackendEnum()
+    {
+        new JsonEnumContract<FirewallBackend>()
+            .For(FirewallBackend.Iptables, "iptables")
+            .For(FirewallBackend.Firewalld, "firewalld");
     }
 
     [Fact]

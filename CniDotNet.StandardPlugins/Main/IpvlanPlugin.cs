@@ -26,13 +26,7 @@ public sealed record IpvlanPlugin(
             jsonObject["master"] = Master;
         }
 
-        jsonObject["mode"] = Mode switch
-        {
-            IpvlanMode.L2 => "l2",
-            IpvlanMode.L3 => "l3",
-            IpvlanMode.L3S => "l3s",
-            _ => throw new ArgumentOutOfRangeException(nameof(jsonObject))
-        };
+        jsonObject["mode"] = JsonSerializer.SerializeToNode(Mode, CniRuntime.SerializerOptions);
 
         if (Mtu is not null)
         {

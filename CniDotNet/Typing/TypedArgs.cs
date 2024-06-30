@@ -9,7 +9,7 @@ public sealed record TypedArgs(
     IReadOnlyList<string>? Ips = null,
     JsonObject? ExtraArgs = null)
 {
-    internal JsonObject Serialize()
+    public JsonObject Serialize()
     {
         var jsonNode = ExtraArgs?.DeepClone() ?? new JsonObject();
 

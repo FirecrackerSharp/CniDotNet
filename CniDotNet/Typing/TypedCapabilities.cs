@@ -17,7 +17,7 @@ public sealed record TypedCapabilities(
     string? CgroupPath = null,
     JsonObject? ExtraCapabilities = null)
 {
-    internal JsonObject Serialize()
+    public JsonObject Serialize()
     {
         var jsonNode = ExtraCapabilities?.DeepClone() ?? new JsonObject();
 
